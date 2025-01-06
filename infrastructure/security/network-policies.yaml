@@ -1,0 +1,198 @@
+# Kubernetes NetworkPolicies implementing zero-trust network security model
+# Version: networking.k8s.io/v1 (Kubernetes 1.27+)
+# Enforces FedRAMP High and CJIS compliance requirements with strict network segmentation
+
+---
+# Default deny-all policy as zero-trust baseline
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  labels:
+    compliance: fedramp-high
+    security: zero-trust
+    app.kubernetes.io/part-of: crimeminer
+  annotations:
+    audit.crimeminer.io/level: detailed
+    security.crimeminer.io/encryption: required
+    compliance.fedramp.gov/control-baseline: high
+    network.security.gov/isolation: strict
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+---
+# API Gateway ingress policy with enhanced security controls
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-gateway-ingress
+  labels:
+    compliance: fedramp-high
+    security: gateway
+    app.kubernetes.io/part-of: crimeminer
+  annotations:
+    audit.crimeminer.io/level: detailed
+    network.crimeminer.io/encryption: tls-1-3-only
+    security.istio.io/tlsMode: STRICT
+    network.security.gov/isolation: strict
+spec:
+  podSelector:
+    matchLabels:
+      app: api-gateway
+      security.crimeminer.io/mtls: required
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-frontend
+          security.crimeminer.io/trusted: "true"
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+# Backend services network policy with strict security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-services
+  labels:
+    compliance: fedramp-high
+    security: backend
+    app.kubernetes.io/part-of: crimeminer
+  annotations:
+    audit.crimeminer.io/level: detailed
+    security.istio.io/tlsMode: STRICT
+    network.security.gov/isolation: strict
+spec:
+  podSelector:
+    matchLabels:
+      namespace: crimeminer-backend
+      security.crimeminer.io/mtls: required
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-backend
+          security.crimeminer.io/trusted: "true"
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-backend
+          security.crimeminer.io/trusted: "true"
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+# ML services access policy with enhanced security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ml-service-access
+  labels:
+    compliance: fedramp-high
+    security: ml-service
+    app.kubernetes.io/part-of: crimeminer
+  annotations:
+    audit.crimeminer.io/level: detailed
+    security.crimeminer.io/data-classification: sensitive
+    security.istio.io/tlsMode: STRICT
+    network.security.gov/isolation: strict
+spec:
+  podSelector:
+    matchLabels:
+      namespace: crimeminer-ml
+      security.crimeminer.io/mtls: required
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-backend
+      podSelector:
+        matchLabels:
+          app: evidence-service
+          security.crimeminer.io/trusted: "true"
+    ports:
+    - protocol: TCP
+      port: 443
+
+---
+# Database access policy with strict controls
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-access
+  labels:
+    compliance: fedramp-high
+    security: database
+    app.kubernetes.io/part-of: crimeminer
+  annotations:
+    audit.crimeminer.io/level: detailed
+    security.crimeminer.io/data-classification: sensitive
+    security.istio.io/tlsMode: STRICT
+    network.security.gov/isolation: strict
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+      security.crimeminer.io/mtls: required
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-backend
+      podSelector:
+        matchLabels:
+          security.crimeminer.io/trusted: "true"
+          security.crimeminer.io/db-access: "true"
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# Monitoring services network policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: monitoring-access
+  labels:
+    compliance: fedramp-high
+    security: monitoring
+    app.kubernetes.io/part-of: crimeminer
+  annotations:
+    audit.crimeminer.io/level: detailed
+    security.istio.io/tlsMode: STRICT
+    network.security.gov/isolation: strict
+spec:
+  podSelector:
+    matchLabels:
+      namespace: crimeminer-monitoring
+      security.crimeminer.io/mtls: required
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-system
+      podSelector:
+        matchLabels:
+          app: prometheus
+          security.crimeminer.io/trusted: "true"
+    ports:
+    - protocol: TCP
+      port: 9090
