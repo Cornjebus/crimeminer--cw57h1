@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="no-js" data-fedramp="high" data-cjis="compliant">
+<head>
+    <!-- Character encoding -->
+    <meta charset="UTF-8">
+    
+    <!-- Security headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://fedramp-monitoring.gov; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.crimeminer.gov; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    
+    <!-- Responsive viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Application metadata -->
+    <meta name="description" content="CrimeMiner - FedRAMP High certified, CJIS-compliant AI-powered investigative platform for law enforcement">
+    <meta name="theme-color" content="#1A73E8">
+    <meta name="security-classification" content="LAW_ENFORCEMENT_SENSITIVE">
+    <meta name="application-name" content="CrimeMiner">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Primary font preload for performance -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" as="style" crossorigin="anonymous" integrity="sha384-...">
+    <link rel="preload" href="https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2" as="font" type="font/woff2" crossorigin="anonymous" integrity="sha384-...">
+    
+    <!-- Primary font stylesheet -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" crossorigin="anonymous" integrity="sha384-...">
+    
+    <!-- Application styles -->
+    <link rel="stylesheet" href="./src/assets/styles/global.scss">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    
+    <!-- Application title -->
+    <title>CrimeMiner</title>
+    
+    <!-- Security monitoring integration -->
+    <script src="https://fedramp-monitoring.gov/monitor.js" integrity="sha384-..." crossorigin="anonymous" async defer></script>
+    
+    <!-- Detect JavaScript support -->
+    <script>document.documentElement.classList.remove('no-js');</script>
+</head>
+<body id="root" role="application" aria-label="CrimeMiner Application">
+    <!-- Application loading state -->
+    <noscript>
+        <div role="alert" class="error-boundary">
+            <h1>JavaScript Required</h1>
+            <p>CrimeMiner requires JavaScript to be enabled for secure operation. Please enable JavaScript and reload the page.</p>
+        </div>
+    </noscript>
+    
+    <!-- Application entry point -->
+    <script type="module" src="./src/main.tsx"></script>
+    
+    <!-- Security headers for legacy browser support -->
+    <script>
+        if (window.isSecureContext !== true) {
+            document.body.innerHTML = '<div role="alert" class="error-boundary"><h1>Secure Context Required</h1><p>CrimeMiner must be accessed through a secure HTTPS connection.</p></div>';
+        }
+    </script>
+</body>
+</html>
