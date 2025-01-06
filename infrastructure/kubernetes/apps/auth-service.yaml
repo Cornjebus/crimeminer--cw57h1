@@ -1,0 +1,214 @@
+# Kubernetes manifest for CrimeMiner Authentication Service
+# Implements FedRAMP High and CJIS compliant authentication with MFA support
+# Version: 1.27+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: crimeminer-backend
+  labels:
+    app: auth-service
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: auth
+    compliance-level: fedramp-high
+    security-zone: restricted
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    cjis.security.gov/policy-version: "5.9"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+      compliance-level: fedramp-high
+      security-zone: restricted
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        compliance-level: fedramp-high
+        security-zone: restricted
+      annotations:
+        compliance.fedramp.gov/control-baseline: high
+        security.istio.io/tlsMode: istio
+        cjis.security.gov/policy-version: "5.9"
+        sidecar.istio.io/inject: "true"
+        vault.hashicorp.com/agent-inject: "true"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+    spec:
+      serviceAccountName: auth-service-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: auth-service
+        image: crimeminer/auth-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3001
+          protocol: TCP
+          name: http
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: SERVICE_PORT
+          value: "3001"
+        - name: LOG_LEVEL
+          value: "info"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3001
+            scheme: HTTPS
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: auth-config
+          mountPath: /etc/auth-service
+          readOnly: true
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: auth-config
+        secret:
+          secretName: auth-service-config
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values: ["auth-service"]
+            topologyKey: kubernetes.io/hostname
+      topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: DoNotSchedule
+        labelSelector:
+          matchLabels:
+            app: auth-service
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: crimeminer-backend
+  labels:
+    app: auth-service
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: auth
+    compliance-level: fedramp-high
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+spec:
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: https
+  selector:
+    app: auth-service
+  type: ClusterIP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-service-hpa
+  namespace: crimeminer-backend
+  labels:
+    app: auth-service
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: auth
+    compliance-level: fedramp-high
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service-pdb
+  namespace: crimeminer-backend
+  labels:
+    app: auth-service
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: auth
+    compliance-level: fedramp-high
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: auth-service
