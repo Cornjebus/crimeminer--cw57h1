@@ -1,0 +1,195 @@
+name: Frontend Deploy
+
+on:
+  workflow_run:
+    workflows: ["Frontend CI"]
+    branches: [main]
+    types: [completed]
+    paths: ['src/web/**']
+
+env:
+  NODE_VERSION: '18.x'
+  WORKING_DIRECTORY: 'src/web'
+  REGISTRY: 'crimemineracr.azurecr.io'
+  IMAGE_NAME: 'crimeminer-web'
+  KUBE_NAMESPACE: 'crimeminer'
+  SCAN_SEVERITY_THRESHOLD: 'HIGH'
+
+jobs:
+  security_scan:
+    name: Security Validation
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Run SAST analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: javascript
+          queries: security-extended
+          
+      - name: Scan dependencies
+        uses: snyk/actions/node@v3
+        with:
+          args: --severity-threshold=${{ env.SCAN_SEVERITY_THRESHOLD }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Container vulnerability scan
+        uses: azure/container-scan@v2
+        with:
+          image-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          severity-threshold: ${{ env.SCAN_SEVERITY_THRESHOLD }}
+          
+      - name: FedRAMP compliance check
+        uses: azure/policy-compliance-scan@v1
+        with:
+          policy-type: 'fedramp_high'
+          fail-on-violation: true
+
+  build_and_push:
+    name: Build and Push Image
+    needs: [security_scan]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+          
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: ${{ env.WORKING_DIRECTORY }}
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-to: type=inline
+          build-args: |
+            NODE_ENV=production
+          labels: |
+            org.label-schema.security.fedramp=high
+            org.label-schema.security.cjis=compliant
+            
+      - name: Sign container image
+        uses: azure/container-signing@v1
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy_staging:
+    name: Deploy to Staging
+    needs: [build_and_push]
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.crimeminer.gov
+    
+    steps:
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          cluster-name: crimeminer-staging
+          resource-group: crimeminer-rg
+          
+      - name: Deploy canary
+        uses: azure/k8s-deploy@v4
+        with:
+          namespace: ${{ env.KUBE_NAMESPACE }}
+          manifests: |
+            k8s/staging/deployment.yaml
+            k8s/staging/service.yaml
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          strategy: canary
+          percentage: 20
+          
+      - name: Run security tests
+        run: |
+          curl -X POST https://security-scanner.crimeminer.gov/api/scan \
+            -H "Authorization: Bearer ${{ secrets.SECURITY_SCANNER_TOKEN }}" \
+            -d '{"target": "https://staging.crimeminer.gov"}'
+            
+      - name: Monitor health metrics
+        uses: azure/monitor-health@v2
+        with:
+          namespace: ${{ env.KUBE_NAMESPACE }}
+          deployment: crimeminer-web
+          duration: 300
+          success-threshold: 98
+          
+      - name: Scale to 100%
+        if: success()
+        uses: azure/k8s-deploy@v4
+        with:
+          namespace: ${{ env.KUBE_NAMESPACE }}
+          strategy: canary
+          percentage: 100
+          
+  deploy_production:
+    name: Deploy to Production
+    needs: [deploy_staging]
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://crimeminer.gov
+      
+    steps:
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          cluster-name: crimeminer-prod
+          resource-group: crimeminer-rg
+          
+      - name: Progressive deployment
+        uses: azure/k8s-deploy@v4
+        with:
+          namespace: ${{ env.KUBE_NAMESPACE }}
+          manifests: |
+            k8s/production/deployment.yaml
+            k8s/production/service.yaml
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          strategy: rolling
+          percentage: 25
+          iterations: 4
+          interval: 300
+          
+      - name: Security validation
+        run: |
+          for endpoint in $(kubectl get endpoints -n ${{ env.KUBE_NAMESPACE }} -o jsonpath='{.items[*].subsets[*].addresses[*].ip}'); do
+            curl -X POST https://security-scanner.crimeminer.gov/api/scan \
+              -H "Authorization: Bearer ${{ secrets.SECURITY_SCANNER_TOKEN }}" \
+              -d "{\"target\": \"http://${endpoint}\"}"
+          done
+          
+      - name: Performance monitoring
+        uses: azure/monitor-health@v2
+        with:
+          namespace: ${{ env.KUBE_NAMESPACE }}
+          deployment: crimeminer-web
+          duration: 600
+          success-threshold: 99.9
+          metrics: |
+            error_rate < 0.1%
+            latency_p95 < 300ms
+            cpu_usage < 75%
+            
+      - name: Notify deployment complete
+        if: success()
+        uses: azure/notification@v1
+        with:
+          teams-webhook: ${{ secrets.TEAMS_WEBHOOK }}
+          message: "Production deployment of CrimeMiner Web v${{ github.sha }} completed successfully"
