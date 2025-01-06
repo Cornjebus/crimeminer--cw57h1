@@ -1,0 +1,216 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Main search page container
+.search-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: map-get($spacing-scale, 4);
+  
+  @include respond-to(mobile) {
+    padding: map-get($spacing-scale, 2);
+  }
+}
+
+// Search header section with search bar and filters
+.search-header {
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing-scale, 3);
+  margin-bottom: map-get($spacing-scale, 4);
+
+  // Search bar container
+  &__search-bar {
+    width: 100%;
+    position: relative;
+
+    input {
+      width: 100%;
+      padding: map-get($spacing-scale, 3);
+      border-radius: 4px;
+      border: 1px solid map-get($colors, border);
+      font-family: map-get(map-get($typography, font-family), primary);
+      font-size: map-get(map-get($typography, font-size), md);
+
+      @include theme-aware(
+        'background',
+        map-get(map-get($colors, background), light),
+        map-get(map-get($colors, background), dark)
+      );
+
+      @include focus-ring(primary);
+      @include transition(border-color, box-shadow);
+    }
+
+    // Auto-completion dropdown
+    &__suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 300px;
+      overflow-y: auto;
+      border-radius: 4px;
+      border: 1px solid map-get($colors, border);
+      margin-top: map-get($spacing-scale, 1);
+      z-index: map-get($z-index, dropdown);
+
+      @include scrollbar;
+      @include theme-aware(
+        'background',
+        map-get(map-get($colors, background), light),
+        map-get(map-get($colors, background), dark)
+      );
+    }
+  }
+}
+
+// Filter panel
+.search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: map-get($spacing-scale, 2);
+  padding: map-get($spacing-scale, 3);
+  border-radius: 4px;
+  
+  @include theme-aware(
+    'background',
+    lighten(map-get(map-get($colors, background), light), 2%),
+    darken(map-get(map-get($colors, background), dark), 2%)
+  );
+
+  &__filter {
+    @include clickable;
+    padding: map-get($spacing-scale, 2) map-get($spacing-scale, 3);
+    border-radius: 4px;
+    border: 1px solid map-get($colors, border);
+    font-size: map-get(map-get($typography, font-size), sm);
+
+    @include focus-ring(primary);
+    @include transition(background-color, border-color);
+
+    &--active {
+      background-color: map-get($colors, primary);
+      border-color: map-get($colors, primary);
+      color: white;
+    }
+  }
+}
+
+// Results grid
+.search-results {
+  display: grid;
+  gap: map-get($spacing-scale, 3);
+  overflow-y: auto;
+  flex: 1;
+  
+  @include scrollbar;
+
+  // Responsive grid layouts
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+  }
+
+  @include respond-to(tablet) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include respond-to(desktop) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  // Result card
+  &__card {
+    border-radius: 4px;
+    border: 1px solid map-get($colors, border);
+    overflow: hidden;
+    
+    @include elevation(1);
+    @include transition(transform, box-shadow);
+
+    @include hover-effect {
+      transform: translateY(-2px);
+      @include elevation(2);
+    }
+
+    &__content {
+      padding: map-get($spacing-scale, 3);
+
+      h3 {
+        font-size: map-get(map-get($typography, font-size), lg);
+        font-weight: map-get(map-get($typography, font-weight), medium);
+        margin-bottom: map-get($spacing-scale, 2);
+        @include truncate-text(2);
+      }
+
+      p {
+        font-size: map-get(map-get($typography, font-size), sm);
+        color: rgba(map-get(map-get($colors, text), light), 0.8);
+        @include truncate-text(3);
+      }
+    }
+  }
+}
+
+// Timeline visualization
+.search-timeline {
+  height: 200px;
+  margin: map-get($spacing-scale, 4) 0;
+  padding: map-get($spacing-scale, 3);
+  border: 1px solid map-get($colors, border);
+  border-radius: 4px;
+  
+  @include theme-aware(
+    'background',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+
+  // Timeline markers
+  &__marker {
+    position: relative;
+    cursor: pointer;
+    
+    @include clickable;
+    @include transition(transform);
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: map-get($colors, primary);
+    }
+
+    &--important::before {
+      background-color: map-get($colors, warning);
+    }
+
+    &--alert::before {
+      background-color: map-get($colors, error);
+    }
+  }
+}
+
+// High contrast mode adjustments
+@include high-contrast {
+  .search-filters__filter {
+    border-width: 2px;
+    
+    &--active {
+      outline: 2px solid map-get($colors, text, light);
+      outline-offset: 2px;
+    }
+  }
+
+  .search-results__card {
+    border-width: 2px;
+    box-shadow: none;
+  }
+
+  .search-timeline__marker::before {
+    border: 2px solid currentColor;
+  }
+}
