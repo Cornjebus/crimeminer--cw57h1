@@ -1,0 +1,137 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Global variables for input component
+$input-height: 48px;
+$input-padding: map-get($spacing-scale, 3);
+$input-border-radius: 4px;
+$input-mobile-height: 56px;
+$input-transition: map-get(map-get($transitions, duration), fast) map-get(map-get($transitions, timing), ease-in-out);
+
+// Base input container
+.input {
+  position: relative;
+  width: 100%;
+  margin-bottom: map-get($spacing-scale, 3);
+
+  @media print {
+    margin-bottom: map-get($spacing-scale, 2);
+  }
+}
+
+// Input field element
+.input__field {
+  width: 100%;
+  height: $input-height;
+  padding: $input-padding;
+  border-radius: $input-border-radius;
+  border-width: 1px;
+  border-style: solid;
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-size: map-get(map-get($typography, font-size), md);
+  line-height: map-get(map-get($typography, line-height), normal);
+  transition: all $input-transition;
+
+  @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+  @include theme-aware('border-color', map-get($colors, border), rgba(map-get($colors, border), 0.3));
+
+  @include respond-to('mobile') {
+    height: $input-mobile-height;
+  }
+
+  &:hover:not(:disabled) {
+    @include theme-aware('border-color', map-get($colors, primary), lighten(map-get($colors, primary), 10%));
+  }
+
+  &:focus {
+    @include focus-ring('primary');
+  }
+
+  &::placeholder {
+    @include theme-aware('color', rgba(map-get($colors, text, light), 0.6), rgba(map-get($colors, text, dark), 0.6));
+  }
+
+  @media (prefers-contrast: high) {
+    border-width: 2px;
+    &::placeholder {
+      opacity: 1;
+    }
+  }
+}
+
+// Error state
+.input__field--error {
+  @include theme-aware('border-color', map-get($colors, error), lighten(map-get($colors, error), 10%));
+  @include theme-aware('background-color', rgba(map-get($colors, error), 0.05), rgba(map-get($colors, error), 0.1));
+
+  &[aria-invalid='true'] {
+    border-width: 2px;
+  }
+}
+
+// Disabled state
+.input__field--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  @include theme-aware('background-color', darken(map-get($colors, background, light), 5%), lighten(map-get($colors, background, dark), 5%));
+
+  @media (prefers-contrast: high) {
+    opacity: 0.75;
+    border-style: dashed;
+  }
+}
+
+// Input label
+.input__label {
+  display: block;
+  margin-bottom: map-get($spacing-scale, 2);
+  font-size: map-get(map-get($typography, font-size), sm);
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  @include rtl-aware('text-align', 'left', 'right');
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+
+  &[data-required='true']::after {
+    content: '*';
+    margin-left: map-get($spacing-scale, 1);
+    color: map-get($colors, error);
+  }
+}
+
+// Error message
+.input__error {
+  @include theme-aware('color', map-get($colors, error), lighten(map-get($colors, error), 10%));
+  font-size: map-get(map-get($typography, font-size), sm);
+  margin-top: map-get($spacing-scale, 1);
+  min-height: 20px;
+
+  &[aria-live='polite'] {
+    position: absolute;
+    bottom: -24px;
+  }
+
+  @media (prefers-contrast: high) {
+    font-weight: map-get(map-get($typography, font-weight), bold);
+    text-decoration: underline;
+  }
+}
+
+// RTL Support
+[dir='rtl'] {
+  .input__field {
+    text-align: right;
+  }
+
+  .input__label[data-required='true']::after {
+    margin-right: map-get($spacing-scale, 1);
+    margin-left: 0;
+  }
+}
+
+// Touch device optimizations
+@media (hover: none) and (pointer: coarse) {
+  .input__field {
+    font-size: map-get(map-get($typography, font-size), lg);
+    min-height: $input-mobile-height;
+  }
+}
