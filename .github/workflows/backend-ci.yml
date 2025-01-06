@@ -1,0 +1,169 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  id-token: write
+
+env:
+  NODE_VERSION: '18.x'
+  NODE_ENV: 'test'
+  COVERAGE_THRESHOLD: '80'
+  SECURITY_LEVEL: 'high'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm audit --audit-level=${{ env.SECURITY_LEVEL }}
+
+      - name: Lint code
+        run: npm run lint:ci
+
+      - name: Type check
+        run: npm run build
+        env:
+          TS_NODE_PROJECT: ./src/backend/tsconfig.json
+
+      - name: Cache build artifacts
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/dist
+            **/.tsbuildinfo
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Restore build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            **/dist
+            **/.tsbuildinfo
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:cov
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+          JEST_JUNIT_OUTPUT_NAME: unit-test-results.xml
+
+      - name: Run integration tests
+        run: npm run test:e2e
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./reports/junit/
+          JEST_JUNIT_OUTPUT_NAME: integration-test-results.xml
+
+      - name: Verify coverage thresholds
+        run: |
+          COVERAGE=$(jq -r '.total.lines.pct' coverage/coverage-summary.json)
+          if (( $(echo "$COVERAGE < $COVERAGE_THRESHOLD" | bc -l) )); then
+            echo "Coverage $COVERAGE% is below threshold of $COVERAGE_THRESHOLD%"
+            exit 1
+          fi
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            reports/junit/
+            coverage/
+
+  security:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+          queries: security-extended,security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@v3
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=${{ env.SECURITY_LEVEL }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript"
+
+      - name: FedRAMP compliance check
+        run: |
+          npm run test:security
+          if [ $? -ne 0 ]; then
+            echo "FedRAMP compliance checks failed"
+            exit 1
+          fi
+
+      - name: CJIS security validation
+        run: |
+          # Validate CJIS security requirements
+          npm run test -- --selectProjects=security
+          if [ $? -ne 0 ]; then
+            echo "CJIS security validation failed"
+            exit 1
+          fi
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            reports/security/
+            snyk-results.json
+            codeql-results.sarif
