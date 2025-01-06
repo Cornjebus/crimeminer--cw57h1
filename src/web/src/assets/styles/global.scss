@@ -1,0 +1,197 @@
+// CrimeMiner Global Styles
+// Version: 1.0.0
+
+@use 'sass:map';
+@import 'normalize.css/normalize.css'; // v8.0.1
+@import './variables';
+@import './mixins';
+
+// Base HTML Elements
+html {
+  font-size: map.get(map.get($typography, font-size), base);
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: unquote(map.get(map.get($typography, font-family), primary));
+  line-height: map.get(map.get($typography, line-height), normal);
+  height: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  @include theme-aware('background', map.get(map.get($colors, background), light), map.get(map.get($colors, background), dark));
+  @include theme-aware('color', map.get(map.get($colors, text), light), map.get(map.get($colors, text), dark));
+}
+
+// Typography
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: map.get($spacing-scale, 3);
+  font-weight: map.get(map.get($typography, font-weight), bold);
+  line-height: map.get(map.get($typography, line-height), tight);
+}
+
+p {
+  margin-bottom: map.get($spacing-scale, 3);
+}
+
+// Links
+a {
+  @include theme-aware('color', map.get($colors, primary), map.get($colors, primary));
+  text-decoration: none;
+  
+  @include hover-effect {
+    text-decoration: underline;
+  }
+  
+  @include focus-ring;
+}
+
+// Form Elements
+button {
+  @include clickable;
+  border: none;
+  background: none;
+  font: inherit;
+  @include focus-ring;
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  width: 100%;
+  padding: map.get($spacing-scale, 2);
+  @include focus-ring;
+  @include theme-aware('border', map.get($colors, border), map.get($colors, border));
+  border-radius: 4px;
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Media Elements
+img,
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// Selection Styles
+::selection {
+  @include theme-aware('background', '#E8F0FE', '#264F78');
+  @include theme-aware('color', map.get($colors, primary), '#FFFFFF');
+}
+
+// Accessibility
+.sr-only {
+  @include screen-reader-only;
+}
+
+// Focus Visible Polyfill
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  @include focus-ring;
+}
+
+// Reduced Motion
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// High Contrast Mode Support
+@include high-contrast {
+  * {
+    border-color: currentColor !important;
+  }
+  
+  a {
+    text-decoration: underline !important;
+  }
+}
+
+// Custom Scrollbar
+body {
+  @include scrollbar;
+}
+
+// Grid Container
+.container {
+  @include grid-container;
+}
+
+// Utility Classes
+.text-truncate {
+  @include truncate-text;
+}
+
+.text-truncate-2 {
+  @include truncate-text(2);
+}
+
+.text-truncate-3 {
+  @include truncate-text(3);
+}
+
+// Theme Classes
+[data-theme='light'] {
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+// Responsive Typography
+@include respond-to(tablet) {
+  html {
+    font-size: calc(#{map.get(map.get($typography, font-size), base)} + 0.5px);
+  }
+}
+
+@include respond-to(desktop) {
+  html {
+    font-size: calc(#{map.get(map.get($typography, font-size), base)} + 1px);
+  }
+}
+
+// Print Styles
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  
+  a {
+    color: #000 !important;
+    text-decoration: underline;
+  }
+  
+  @page {
+    margin: 2cm;
+  }
+}
