@@ -1,0 +1,144 @@
+CRIMEMINER PLATFORM - PROPRIETARY LICENSE
+Version 1.0.0
+© 2024 CrimeMiner. All Rights Reserved.
+
+1. DEFINITIONS
+
+"Software" refers to the CrimeMiner platform, including all source code, documentation, and associated materials.
+"Agency" refers to authorized law enforcement organizations.
+"Authorized User" refers to verified law enforcement personnel with valid credentials.
+"Vendor" refers to authorized development and maintenance partners.
+
+2. GRANT OF LICENSE
+
+Subject to the terms and conditions of this License, CrimeMiner grants Agencies a non-transferable, non-exclusive license to:
+
+a) Deploy and operate the Software within Agency infrastructure
+b) Access and utilize all platform capabilities for law enforcement purposes
+c) Configure Agency-specific settings within approved parameters
+d) Generate and maintain derivative data and reports
+
+3. RESTRICTIONS
+
+Agencies and Authorized Users shall NOT:
+
+a) Transfer, sublicense, or distribute the Software outside authorized law enforcement channels
+b) Modify, decompile, or reverse engineer the Software
+c) Remove or alter any proprietary notices or markings
+d) Use the Software for non-law-enforcement purposes
+e) Share access credentials or bypass authentication mechanisms
+
+4. AGENCY VERIFICATION AND ACCESS
+
+4.1 Authentication Requirements
+- Valid agency credentials required for all access
+- Digital signature verification for Software deployment
+- Multi-factor authentication for administrative functions
+- Regular credential revalidation
+
+4.2 Usage Tracking
+- Mandatory audit logging of all system access
+- Chain of custody documentation for evidence handling
+- Usage metrics collection and reporting
+- Compliance verification tracking
+
+5. MODIFICATIONS AND CUSTOMIZATION
+
+5.1 Permitted Modifications
+- Agency-specific configuration changes
+- Approved parameter customization
+- Integration with authorized systems
+
+5.2 Restricted Changes
+- Source code modifications limited to authorized Vendors
+- All changes must maintain CJIS and FedRAMP compliance
+- Mandatory version control and change documentation
+
+6. DISTRIBUTION AND TRANSFER
+
+6.1 Authorized Distribution
+- Agency-to-agency transfer through secure channels only
+- Multi-step verification for receiving agencies
+- Complete transfer documentation requirements
+- Jurisdiction-specific collaboration agreements
+
+6.2 Transfer Protocol
+- Secure transmission requirements
+- Chain of custody documentation
+- Version control maintenance
+- Configuration preservation
+
+7. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. CRIMEMINER MAKES NO WARRANTIES REGARDING THE SOFTWARE'S PERFORMANCE, RELIABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
+
+8. LIABILITY LIMITATIONS
+
+8.1 Limitation of Liability
+CrimeMiner's liability shall be limited to:
+a) Direct damages up to the amount paid for the Software
+b) Excludes consequential, incidental, or special damages
+c) Specific exclusions for data loss or system compromise
+
+8.2 Agency Obligations
+- Mandatory security incident reporting
+- Compliance with jurisdictional regulations
+- Regular audit and compliance reporting
+- Maintenance of security controls
+
+9. COMPLIANCE REQUIREMENTS
+
+9.1 Regulatory Compliance
+- CJIS Security Policy compliance
+- FedRAMP authorization maintenance
+- Agency-specific regulatory requirements
+- Privacy law compliance
+
+9.2 Audit Requirements
+- Regular compliance audits
+- Security assessment participation
+- Documentation maintenance
+- Incident response cooperation
+
+10. TERM AND TERMINATION
+
+10.1 License Term
+- Initial term as specified in agency agreement
+- Renewal requirements and procedures
+- Termination conditions and process
+
+10.2 Post-Termination Obligations
+- Data preservation requirements
+- System decommissioning procedures
+- Documentation maintenance
+- Continued confidentiality obligations
+
+11. EMERGENCY PROVISIONS
+
+11.1 Emergency Access
+- Defined protocols for urgent system access
+- Emergency authorization procedures
+- Documentation requirements
+- Post-incident review process
+
+12. VERSION CONTROL
+
+12.1 License Versioning
+- Semantic versioning system
+- Version compatibility requirements
+- Upgrade path documentation
+- Amendment procedures
+
+13. GOVERNING LAW
+
+This License shall be governed by and construed in accordance with the laws of the jurisdiction where the Agency operates, subject to federal law enforcement regulations and requirements.
+
+14. ACCEPTANCE
+
+Use of the Software constitutes acceptance of these license terms. Agencies must maintain signed copies of this agreement and all amendments.
+
+For additional information or clarification, contact:
+CrimeMiner Compliance Office
+[CONTACT INFORMATION]
+
+END OF LICENSE
