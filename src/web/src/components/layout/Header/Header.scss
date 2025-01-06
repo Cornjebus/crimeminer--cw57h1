@@ -1,0 +1,157 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Main header container
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: map-get($z-index, header);
+  height: map-get($spacing-scale, 5); // 32px
+  padding: map-get($spacing-scale, 3); // 16px
+  background: map-get(map-get($colors, background), light);
+  border-bottom: 1px solid map-get($colors, border);
+  @include transition(background, border-color);
+
+  // Print styles
+  @media print {
+    position: static;
+    border-bottom: none;
+  }
+
+  // Reduced motion preference
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  // Dark theme styles
+  [data-theme='dark'] & {
+    background: map-get(map-get($colors, background), dark);
+    border-color: rgba(map-get($colors, border), 0.1);
+  }
+
+  // High contrast mode
+  @include high-contrast {
+    @media (forced-colors: active) {
+      border-color: CanvasText;
+      background: Canvas;
+    }
+  }
+}
+
+// Inner container with max-width
+.header__container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: map-get($grid, max-width);
+  margin: 0 auto;
+  height: 100%;
+  padding: 0 map-get($spacing-scale, 3);
+
+  @include respond-to(mobile) {
+    padding: 0 map-get($spacing-scale, 2);
+  }
+}
+
+// Logo section
+.header__logo {
+  @include flex-center;
+  @include rtl-aware(margin-right, map-get($spacing-scale, 3));
+  gap: map-get($spacing-scale, 2);
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-weight: map-get(map-get($typography, font-weight), bold);
+  font-size: map-get(map-get($typography, font-size), lg);
+  color: map-get(map-get($colors, text), light);
+  text-decoration: none;
+
+  &:focus {
+    @include focus-ring;
+  }
+
+  [data-theme='dark'] & {
+    color: map-get(map-get($colors, text), dark);
+  }
+
+  @include high-contrast {
+    @media (forced-colors: active) {
+      color: CanvasText;
+    }
+  }
+}
+
+// Navigation section
+.header__nav {
+  display: flex;
+  align-items: center;
+  gap: map-get($spacing-scale, 3);
+
+  @include respond-to(mobile) {
+    gap: map-get($spacing-scale, 2);
+  }
+}
+
+// Search section
+.header__search {
+  width: 300px;
+  @include transition(width);
+
+  @include respond-to(tablet) {
+    width: 200px;
+  }
+
+  @include respond-to(mobile) {
+    width: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+
+  // Expanded state for mobile search
+  &--expanded {
+    @include respond-to(mobile) {
+      width: 100%;
+      position: absolute;
+      left: 0;
+      top: 100%;
+      background: map-get(map-get($colors, background), light);
+      border-bottom: 1px solid map-get($colors, border);
+      padding: map-get($spacing-scale, 2);
+
+      [data-theme='dark'] & {
+        background: map-get(map-get($colors, background), dark);
+      }
+    }
+  }
+}
+
+// Actions section (profile, alerts, settings)
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: map-get($spacing-scale, 2);
+  @include rtl-aware(margin-left, auto);
+
+  // Ensure buttons have proper focus states
+  button {
+    @include clickable;
+    
+    &:focus {
+      @include focus-ring;
+    }
+  }
+}
+
+// Accessibility enhancements
+@media (prefers-reduced-motion: reduce) {
+  .header,
+  .header__search {
+    transition: none;
+  }
+}
+
+// Screen reader only text
+.header__sr-only {
+  @include screen-reader-only;
+}
