@@ -1,0 +1,192 @@
+# Kubernetes deployment manifest for evidence processing service
+# Implements FedRAMP High and CJIS compliant configuration with enhanced security
+# Version: 1.27+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evidence-service
+  namespace: crimeminer-backend
+  labels:
+    app: evidence-service
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: evidence-processing
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: evidence-service
+      compliance: fedramp-high
+  template:
+    metadata:
+      labels:
+        app: evidence-service
+        compliance-level: fedramp-high
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        seccomp.security.alpha.kubernetes.io/pod: "runtime/default"
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: evidence-service
+        image: evidence-service:latest
+        imagePullPolicy: Always
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+            add: ["NET_BIND_SERVICE"]
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+            scheme: HTTPS
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: evidence-cache
+          mountPath: /cache
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: COMPLIANCE_LEVEL
+          value: "fedramp-high"
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: evidence-cache
+        emptyDir:
+          medium: Memory
+          sizeLimit: 1Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evidence-service
+  namespace: crimeminer-backend
+  labels:
+    app: evidence-service
+    app.kubernetes.io/part-of: crimeminer
+    compliance-level: fedramp-high
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: evidence-service
+  type: ClusterIP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: evidence-service-hpa
+  namespace: crimeminer-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: evidence-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: evidence-service-pdb
+  namespace: crimeminer-backend
+spec:
+  minAvailable: "90%"
+  selector:
+    matchLabels:
+      app: evidence-service
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: evidence-service-network-policy
+  namespace: crimeminer-backend
+spec:
+  podSelector:
+    matchLabels:
+      app: evidence-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-backend
+    ports:
+    - protocol: TCP
+      port: 3000
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-backend
+    ports:
+    - protocol: TCP
+      port: 443
