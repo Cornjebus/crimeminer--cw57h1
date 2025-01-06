@@ -1,0 +1,139 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+.entity-list {
+  padding: map-get($spacing-scale, 4);
+  border-radius: 8px;
+  @include theme-aware('background', map-get($colors, background, light), map-get($colors, background, dark));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  min-height: 200px;
+  max-height: 600px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  @include scrollbar;
+
+  // Responsive adjustments
+  @include respond-to('mobile') {
+    padding: map-get($spacing-scale, 2);
+    font-size: map-get(map-get($typography, font-size), sm);
+  }
+
+  @include respond-to('tablet') {
+    padding: map-get($spacing-scale, 3);
+    font-size: map-get(map-get($typography, font-size), md);
+  }
+
+  @include respond-to('desktop') {
+    padding: map-get($spacing-scale, 4);
+    font-size: map-get(map-get($typography, font-size), lg);
+  }
+
+  // High contrast mode
+  @include high-contrast {
+    background: #000000;
+    color: #FFFFFF;
+    border: 2px solid #FFFFFF;
+    box-shadow: none;
+  }
+}
+
+.entity-list__header {
+  margin-bottom: map-get($spacing-scale, 3);
+  font-size: map-get(map-get($typography, font-size), lg);
+  font-weight: map-get(map-get($typography, font-weight), bold);
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+  border-bottom: 2px solid;
+  @include theme-aware('border-color', map-get($colors, border), rgba(255, 255, 255, 0.1));
+  padding-bottom: map-get($spacing-scale, 2);
+  position: sticky;
+  top: 0;
+  background: inherit;
+  z-index: 1;
+}
+
+.entity-list__item {
+  display: flex;
+  align-items: center;
+  padding: map-get($spacing-scale, 2);
+  border-bottom: 1px solid;
+  @include theme-aware('border-color', map-get($colors, border), rgba(255, 255, 255, 0.1));
+  transition: background-color 0.2s ease;
+  @include clickable;
+
+  &:hover {
+    @include theme-aware('background', rgba(0, 0, 0, 0.05), rgba(255, 255, 255, 0.05));
+  }
+
+  &:focus-within {
+    @include focus-ring('primary');
+  }
+}
+
+.entity-list__item-type {
+  flex: 0 0 100px;
+  @include truncate-text;
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  
+  @include respond-to('mobile') {
+    flex: 0 0 80px;
+  }
+}
+
+.entity-list__item-value {
+  flex: 1;
+  @include truncate-text;
+  padding: 0 map-get($spacing-scale, 2);
+}
+
+.entity-list__item-confidence {
+  flex: 0 0 80px;
+  text-align: right;
+  font-family: map-get(map-get($typography, font-family), monospace);
+  
+  @include high-contrast {
+    color: #FFFF00;
+  }
+}
+
+// Dark theme variations
+[data-theme='dark'] .entity-list {
+  background: map-get($colors, background, dark);
+  color: map-get($colors, text, dark);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+
+  .entity-list__item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+// Empty state
+.entity-list--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  font-style: italic;
+  @include theme-aware('color', rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.5));
+}
+
+// Loading state
+.entity-list--loading {
+  position: relative;
+  min-height: 200px;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    @include theme-aware('background', rgba(255, 255, 255, 0.8), rgba(0, 0, 0, 0.8));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
