@@ -1,0 +1,183 @@
+@use '../../../assets/styles/mixins' as *;
+@use '../../../assets/styles/variables' as *;
+
+.report-builder {
+  padding: map-get($spacing-scale, 4);
+  max-width: map-get($grid, max-width);
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing-scale, 4);
+
+  @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+
+  @include respond-to('mobile') {
+    padding: map-get($spacing-scale, 3);
+  }
+
+  @include high-contrast {
+    border: 2px solid map-get($colors, text, light);
+  }
+}
+
+.report-type {
+  margin-bottom: map-get($spacing-scale, 4);
+  width: 100%;
+  
+  select {
+    width: 100%;
+    padding: map-get($spacing-scale, 3);
+    border-radius: 4px;
+    border: 1px solid;
+    @include theme-aware('border-color', map-get($colors, border), map-get($colors, border));
+    @include focus-ring;
+    @include elevation(1);
+    
+    @include hover-effect {
+      @include elevation(2);
+    }
+  }
+}
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing-scale, 3);
+  margin-bottom: map-get($spacing-scale, 4);
+  padding: map-get($spacing-scale, 3);
+  border: 1px solid;
+  @include theme-aware('border-color', map-get($colors, border), map-get($colors, border));
+  border-radius: 4px;
+
+  .section-item {
+    display: flex;
+    align-items: center;
+    gap: map-get($spacing-scale, 2);
+
+    input[type="checkbox"] {
+      @include focus-ring;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    label {
+      @include clickable;
+      font-family: map-get(map-get($typography, font-family), primary);
+      font-size: map-get(map-get($typography, font-size), md);
+    }
+  }
+}
+
+.date-range {
+  display: flex;
+  gap: map-get($spacing-scale, 3);
+  margin-bottom: map-get($spacing-scale, 4);
+  flex-wrap: wrap;
+  align-items: center;
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  @include respond-to('tablet') {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  input[type="date"] {
+    padding: map-get($spacing-scale, 2);
+    border-radius: 4px;
+    border: 1px solid;
+    @include theme-aware('border-color', map-get($colors, border), map-get($colors, border));
+    @include focus-ring;
+    min-width: 200px;
+
+    &::-webkit-calendar-picker-indicator {
+      @include theme-aware('filter', 'none', 'invert(1)');
+    }
+  }
+}
+
+.format-options {
+  display: flex;
+  gap: map-get($spacing-scale, 4);
+  margin-bottom: map-get($spacing-scale, 4);
+  flex-wrap: wrap;
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+  }
+
+  @include respond-to('tablet') {
+    flex-direction: row;
+  }
+
+  .format-option {
+    display: flex;
+    align-items: center;
+    gap: map-get($spacing-scale, 2);
+
+    input[type="radio"] {
+      @include focus-ring;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    label {
+      @include clickable;
+      font-family: map-get(map-get($typography, font-family), primary);
+      font-size: map-get(map-get($typography, font-size), md);
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  gap: map-get($spacing-scale, 3);
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: map-get($spacing-scale, 4);
+  border-top: 1px solid;
+  @include theme-aware('border-color', map-get($colors, border), map-get($colors, border));
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  @include respond-to('tablet') {
+    flex-direction: row;
+  }
+
+  button {
+    padding: map-get($spacing-scale, 2) map-get($spacing-scale, 4);
+    border-radius: 4px;
+    font-weight: map-get(map-get($typography, font-weight), medium);
+    @include focus-ring;
+    @include clickable;
+    @include transition(background-color, transform);
+
+    &.primary {
+      background-color: map-get($colors, primary);
+      color: #FFFFFF;
+
+      @include hover-effect {
+        transform: translateY(-1px);
+      }
+    }
+
+    &.secondary {
+      @include theme-aware('background-color', #F5F5F5, #2D2D2D);
+      @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+
+      @include hover-effect {
+        @include theme-aware('background-color', #EBEBEB, #3D3D3D);
+      }
+    }
+  }
+}
