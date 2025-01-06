@@ -1,0 +1,170 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+.search-bar {
+  position: relative;
+  width: 100%;
+  max-width: map.get($grid, max-width);
+  margin: 0 auto;
+  padding: map.get($spacing-scale, 3);
+
+  @include respond-to(mobile) {
+    padding: map.get($spacing-scale, 2);
+  }
+
+  @include respond-to(tablet) {
+    padding: map.get($spacing-scale, 3);
+  }
+
+  @include respond-to(desktop) {
+    padding: map.get($spacing-scale, 4);
+  }
+
+  @include theme-aware(
+    'background-color',
+    map.get($colors, background, light),
+    map.get($colors, background, dark)
+  );
+
+  &--focused {
+    @include focus-ring(primary);
+    z-index: map.get($z-index, dropdown) + 1;
+  }
+
+  &--with-suggestions {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    @include theme-aware(
+      'border-color',
+      map.get($colors, primary),
+      map.get($colors, primary)
+    );
+  }
+}
+
+.search-input {
+  width: 100%;
+  height: map.get($spacing-scale, 5);
+  padding: map.get($spacing-scale, 2) map.get($spacing-scale, 3);
+  border-radius: map.get($spacing-scale, 1);
+  font-family: map.get(map.get($typography, font-family), primary);
+  font-size: map.get(map.get($typography, font-size), md);
+  
+  @include theme-aware(
+    'color',
+    map.get($colors, text, light),
+    map.get($colors, text, dark)
+  );
+  
+  @include theme-aware(
+    'background-color',
+    map.get($colors, background, light),
+    map.get($colors, background, dark)
+  );
+  
+  @include theme-aware(
+    'border-color',
+    map.get($colors, border),
+    rgba(map.get($colors, border), 0.3)
+  );
+
+  @include transition(border-color, box-shadow);
+  @include focus-ring(primary);
+  @include clickable;
+
+  @include respond-to(mobile) {
+    font-size: map.get(map.get($typography, font-size), sm);
+  }
+
+  &::placeholder {
+    @include theme-aware(
+      'color',
+      rgba(map.get($colors, text, light), 0.6),
+      rgba(map.get($colors, text, dark), 0.6)
+    );
+  }
+}
+
+.search-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: map.get($z-index, dropdown);
+  border-radius: 0 0 map.get($spacing-scale, 1) map.get($spacing-scale, 1);
+  
+  @include theme-aware(
+    'background-color',
+    map.get($colors, background, light),
+    map.get($colors, background, dark)
+  );
+  
+  @include elevation(2);
+  @include scrollbar;
+
+  @include respond-to(mobile) {
+    max-height: 200px;
+  }
+}
+
+.recent-searches {
+  margin-top: map.get($spacing-scale, 2);
+  padding: map.get($spacing-scale, 2);
+
+  @include theme-aware(
+    'border-top',
+    1px solid map.get($colors, border),
+    1px solid rgba(map.get($colors, border), 0.3)
+  );
+
+  @include respond-to(mobile) {
+    padding: map.get($spacing-scale, 1);
+  }
+}
+
+// High Contrast Mode Support
+.search-bar,
+.search-input,
+.search-suggestions {
+  @include high-contrast {
+    border: 2px solid map.get($colors, text, light);
+    box-shadow: none;
+    
+    @include theme-aware(
+      'background-color',
+      #FFFFFF,
+      #000000
+    );
+    
+    @include theme-aware(
+      'color',
+      #000000,
+      #FFFFFF
+    );
+  }
+}
+
+// Reduced Motion Support
+@media (prefers-reduced-motion: reduce) {
+  .search-input,
+  .search-suggestions {
+    transition: none;
+  }
+}
+
+// Print Styles
+@media print {
+  .search-bar {
+    border: 1px solid #000000;
+    box-shadow: none;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+
+  .search-suggestions,
+  .recent-searches {
+    display: none;
+  }
+}
