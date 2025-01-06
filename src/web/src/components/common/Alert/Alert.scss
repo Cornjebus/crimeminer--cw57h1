@@ -1,0 +1,155 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Alert type color mappings
+$alert-types: (
+  success: $colors.secondary,
+  error: $colors.error,
+  warning: $colors.warning,
+  info: $colors.primary
+);
+
+// Z-index for alerts to appear above content but below modals
+$alert-z-index: 1000;
+
+// Base alert container
+.alert {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: $spacing-scale.3;
+  margin-bottom: $spacing-scale.3;
+  border-radius: 4px;
+  font-family: $typography.font-family.primary;
+  font-size: $typography.font-size.sm;
+  line-height: 1.5;
+  z-index: $alert-z-index;
+  transition: all $transitions.duration.normal $transitions.timing.ease-in-out;
+
+  // Respect reduced motion preferences
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  // Print styles
+  @media print {
+    border: 1px solid #000;
+    color: #000;
+  }
+
+  // RTL support
+  [dir='rtl'] & {
+    text-align: right;
+  }
+}
+
+// Success variant
+.alert--success {
+  background-color: rgba($alert-types.success, 0.1);
+  color: $alert-types.success;
+  border: 1px solid $alert-types.success;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba($alert-types.success, 0.2);
+    color: lighten($alert-types.success, 15%);
+  }
+}
+
+// Error variant
+.alert--error {
+  background-color: rgba($alert-types.error, 0.1);
+  color: $alert-types.error;
+  border: 1px solid $alert-types.error;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba($alert-types.error, 0.2);
+    color: lighten($alert-types.error, 15%);
+  }
+}
+
+// Warning variant
+.alert--warning {
+  background-color: rgba($alert-types.warning, 0.1);
+  color: $alert-types.warning;
+  border: 1px solid $alert-types.warning;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba($alert-types.warning, 0.2);
+    color: lighten($alert-types.warning, 15%);
+  }
+}
+
+// Info variant
+.alert--info {
+  background-color: rgba($alert-types.info, 0.1);
+  color: $alert-types.info;
+  border: 1px solid $alert-types.info;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: rgba($alert-types.info, 0.2);
+    color: lighten($alert-types.info, 15%);
+  }
+}
+
+// Alert icon
+.alert__icon {
+  margin-right: $spacing-scale.2;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+
+  // RTL support
+  [dir='rtl'] & {
+    margin-right: 0;
+    margin-left: $spacing-scale.2;
+  }
+}
+
+// Alert content
+.alert__content {
+  flex: 1;
+  min-width: 0;
+  word-wrap: break-word;
+
+  // Responsive font size
+  @include respond-to(small) {
+    font-size: $typography.font-size.xs;
+  }
+}
+
+// Close button
+.alert__close {
+  margin-left: $spacing-scale.2;
+  cursor: pointer;
+  opacity: 0.7;
+  padding: $spacing-scale.1;
+  // Ensure touch target size meets WCAG requirements
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity $transitions.duration.fast $transitions.timing.ease-in-out;
+
+  &:hover,
+  &:focus {
+    opacity: 1;
+  }
+
+  // Focus styles for accessibility
+  &:focus {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+  }
+
+  // RTL support
+  [dir='rtl'] & {
+    margin-left: 0;
+    margin-right: $spacing-scale.2;
+  }
+
+  // Respect reduced motion preferences
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
