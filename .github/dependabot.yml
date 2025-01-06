@@ -1,0 +1,126 @@
+version: 2
+updates:
+  # Backend NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/backend"
+    schedule:
+      interval: "daily"
+      time: "02:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "security"
+      - "fedramp-compliance"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps)"
+      include: "scope"
+    groups:
+      typescript-types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      security-critical:
+        patterns:
+          - "crypto*"
+          - "auth*"
+          - "security*"
+        update-types:
+          - "patch"
+    ignore:
+      - dependency-type: "development"
+        update-types: ["version-update:semver-major"]
+    reviewers:
+      - "CODEOWNERS"
+    open-pull-requests-limit: 10
+    security-updates-only: true
+
+  # Frontend NPM dependencies
+  - package-ecosystem: "npm"
+    directory: "/src/web"
+    schedule:
+      interval: "daily"
+      time: "02:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "security"
+      - "fedramp-compliance"
+    commit-message:
+      prefix: "fix(deps)"
+      prefix-development: "chore(deps)"
+      include: "scope"
+    groups:
+      react-packages:
+        patterns:
+          - "react*"
+          - "@types/react*"
+        update-types:
+          - "minor"
+          - "patch"
+      typescript-types:
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      security-critical:
+        patterns:
+          - "crypto*"
+          - "auth*"
+          - "security*"
+        update-types:
+          - "patch"
+    ignore:
+      - dependency-type: "development"
+        update-types: ["version-update:semver-major"]
+    reviewers:
+      - "CODEOWNERS"
+    open-pull-requests-limit: 10
+    security-updates-only: true
+
+  # Docker dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "security"
+      - "fedramp-compliance"
+    commit-message:
+      prefix: "fix(docker)"
+      include: "scope"
+    reviewers:
+      - "CODEOWNERS"
+    open-pull-requests-limit: 5
+    security-updates-only: true
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "security"
+      - "fedramp-compliance"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"
+    reviewers:
+      - "CODEOWNERS"
+    open-pull-requests-limit: 5
+    security-updates-only: true
