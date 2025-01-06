@@ -1,0 +1,245 @@
+# Kubernetes manifest for CrimeMiner API Gateway
+# Implements FedRAMP High and CJIS compliant API Gateway with enhanced security controls
+# Version: 1.27+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: crimeminer-backend
+  labels:
+    app: api-gateway
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: api-gateway
+    compliance-level: fedramp-high
+    security-zone: restricted
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-gateway
+      compliance-level: fedramp-high
+      security-zone: restricted
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        compliance-level: fedramp-high
+        security-zone: restricted
+      annotations:
+        compliance.fedramp.gov/control-baseline: high
+        security.istio.io/tlsMode: strict
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        security.alpha.kubernetes.io/sysctls: net.ipv4.tcp_syncookies=1,net.ipv4.tcp_max_syn_backlog=8192
+    spec:
+      serviceAccountName: api-gateway-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: api-gateway
+        image: api-gateway:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 3000
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: COMPLIANCE_MODE
+          value: "fedramp-high"
+        - name: RATE_LIMIT_ENABLED
+          value: "true"
+        - name: MTLS_MODE
+          value: "strict"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTPS
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 2
+        startupProbe:
+          httpGet:
+            path: /startup
+            port: http
+            scheme: HTTPS
+          failureThreshold: 30
+          periodSeconds: 10
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - api-gateway
+            topologyKey: kubernetes.io/hostname
+      tolerations:
+      - key: "security-zone"
+        operator: "Equal"
+        value: "restricted"
+        effect: "NoSchedule"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: crimeminer-backend
+  labels:
+    app: api-gateway
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: api-gateway
+    compliance-level: fedramp-high
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+spec:
+  type: ClusterIP
+  ports:
+  - name: https
+    port: 443
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: api-gateway
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: api-gateway
+  namespace: crimeminer-backend
+spec:
+  hosts:
+  - "api.crimeminer.gov"
+  gateways:
+  - crimeminer-gateway
+  http:
+  - route:
+    - destination:
+        host: api-gateway
+        port:
+          number: 443
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+    fault:
+      delay:
+        percentage:
+          value: 0.1
+        fixedDelay: 5s
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: api-gateway-auth
+  namespace: crimeminer-backend
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  mtls:
+    mode: STRICT
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: api-gateway-authz
+  namespace: crimeminer-backend
+spec:
+  selector:
+    matchLabels:
+      app: api-gateway
+  rules:
+  - from:
+    - source:
+        principals: ["cluster.local/ns/crimeminer-backend/*"]
+    to:
+    - operation:
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        paths: ["/*"]
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+  namespace: crimeminer-backend
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway-hpa
+  namespace: crimeminer-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
