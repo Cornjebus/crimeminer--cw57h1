@@ -1,0 +1,245 @@
+{
+  "common": {
+    "buttons": {
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "edit": "Edit",
+      "close": "Close",
+      "back": "Back",
+      "next": "Next",
+      "upload": "Upload Evidence",
+      "share": "Share",
+      "export": "Export",
+      "print": "Print",
+      "refresh": "Refresh"
+    },
+    "labels": {
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "required": "Required",
+      "status": "Status",
+      "priority": "Priority",
+      "dateCreated": "Date Created",
+      "lastModified": "Last Modified",
+      "assignedTo": "Assigned To",
+      "caseNumber": "Case Number",
+      "evidenceId": "Evidence ID"
+    },
+    "notifications": {
+      "success": "Operation completed successfully",
+      "error": "An error occurred. Please try again or contact support.",
+      "sessionExpired": "Your session has expired. Please log in again to continue.",
+      "networkError": "Network connection lost. Attempting to reconnect...",
+      "dataUpdated": "Data has been updated successfully",
+      "permissionDenied": "You don't have permission to perform this action",
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+    }
+  },
+  "accessibility": {
+    "skipLinks": {
+      "mainContent": "Skip to main content",
+      "navigation": "Skip to navigation",
+      "search": "Skip to search",
+      "filters": "Skip to filters",
+      "results": "Skip to results"
+    },
+    "landmarks": {
+      "main": "Main content",
+      "navigation": "Primary navigation",
+      "search": "Search section",
+      "caseDetails": "Case details section",
+      "evidenceViewer": "Evidence viewer",
+      "timeline": "Case timeline",
+      "entityGraph": "Entity relationship graph"
+    },
+    "descriptions": {
+      "requiredField": "This field is required",
+      "optionalField": "This field is optional",
+      "errorState": "Error in field",
+      "loadingState": "Content is loading",
+      "emptyState": "No items to display",
+      "selectedState": "Selected item",
+      "expandedState": "Expanded section",
+      "collapsedState": "Collapsed section"
+    }
+  },
+  "aria": {
+    "labels": {
+      "closeButton": "Close dialog",
+      "menuButton": "Open menu",
+      "searchInput": "Search evidence and cases",
+      "filterButton": "Open filters",
+      "sortButton": "Sort results",
+      "pageNumber": "Page {number} of {total}",
+      "evidenceViewer": "Evidence viewer controls",
+      "timelineControls": "Timeline navigation controls",
+      "graphControls": "Relationship graph controls",
+      "uploadProgress": "Upload progress indicator"
+    },
+    "descriptions": {
+      "uploadProgress": "Upload progress: {progress}%",
+      "searchResults": "{count} results found",
+      "timelineNavigation": "Use arrow keys to navigate timeline",
+      "graphNavigation": "Use arrow keys to navigate relationship graph",
+      "mediaPlayer": "Media player controls for evidence playback",
+      "transcriptView": "Transcript view with synchronized highlighting",
+      "entityList": "List of detected entities and relationships"
+    }
+  },
+  "screenReader": {
+    "announcements": {
+      "pageLoaded": "Page loaded",
+      "searchStarted": "Starting search",
+      "searchCompleted": "Search completed with {count} results",
+      "uploadStarted": "Upload started for {fileName}",
+      "uploadCompleted": "Upload completed for {fileName}",
+      "processingStarted": "Evidence processing started",
+      "processingCompleted": "Evidence processing completed",
+      "newEvidence": "New evidence added to case",
+      "caseUpdated": "Case details updated",
+      "errorOccurred": "An error has occurred"
+    },
+    "navigation": {
+      "caseList": "List of cases. Use arrow keys to navigate.",
+      "evidenceList": "List of evidence items. Use arrow keys to navigate.",
+      "timeline": "Interactive timeline. Use left and right arrows to move through events.",
+      "graphNavigation": "Entity relationship graph. Use arrow keys to navigate between nodes.",
+      "menuNavigation": "Application menu. Use up and down arrows to navigate options."
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Login to CrimeMiner",
+      "username": "Username",
+      "password": "Password",
+      "mfaCode": "MFA Code",
+      "loginButton": "Login",
+      "forgotPassword": "Forgot Password?",
+      "rememberMe": "Remember me on this device",
+      "errors": {
+        "invalidCredentials": "Invalid username or password. Please check your credentials and try again.",
+        "invalidMfa": "Invalid MFA code. Please enter the current code from your authenticator app.",
+        "accountLocked": "Account locked due to multiple failed attempts. Please contact your administrator.",
+        "sessionExpired": "Your session has expired for security reasons",
+        "networkError": "Unable to connect to authentication service"
+      },
+      "accessibility": {
+        "mfaInstructions": "Enter the 6-digit code from your authenticator app",
+        "passwordRequirements": "Password must be at least 12 characters long and include uppercase, lowercase, numbers, and special characters",
+        "loginForm": "Login form for secure access to CrimeMiner",
+        "mfaForm": "Multi-factor authentication form"
+      }
+    }
+  },
+  "cases": {
+    "labels": {
+      "caseTitle": "Case Title",
+      "caseDescription": "Case Description",
+      "caseStatus": "Case Status",
+      "casePriority": "Case Priority",
+      "assignedTeam": "Assigned Team",
+      "evidenceCount": "Evidence Items",
+      "lastActivity": "Last Activity"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "closed": "Closed",
+      "archived": "Archived"
+    },
+    "priority": {
+      "high": "High Priority",
+      "medium": "Medium Priority",
+      "low": "Low Priority"
+    }
+  },
+  "evidence": {
+    "types": {
+      "audio": "Audio Recording",
+      "video": "Video Recording",
+      "image": "Image",
+      "document": "Document",
+      "transcript": "Transcript"
+    },
+    "status": {
+      "uploaded": "Uploaded",
+      "processing": "Processing",
+      "completed": "Processing Complete",
+      "error": "Processing Error"
+    },
+    "viewer": {
+      "controls": {
+        "play": "Play",
+        "pause": "Pause",
+        "stop": "Stop",
+        "forward": "Forward 10 seconds",
+        "backward": "Backward 10 seconds",
+        "speed": "Playback Speed"
+      }
+    }
+  },
+  "analysis": {
+    "results": {
+      "title": "Analysis Results",
+      "confidence": "Confidence Score",
+      "entities": "Detected Entities",
+      "relationships": "Entity Relationships",
+      "timeline": "Event Timeline"
+    },
+    "entities": {
+      "person": "Person",
+      "location": "Location",
+      "organization": "Organization",
+      "date": "Date",
+      "event": "Event"
+    }
+  },
+  "search": {
+    "filters": {
+      "dateRange": "Date Range",
+      "evidenceType": "Evidence Type",
+      "status": "Status",
+      "assignee": "Assignee"
+    },
+    "sorting": {
+      "relevance": "Sort by Relevance",
+      "dateNewest": "Sort by Date (Newest)",
+      "dateOldest": "Sort by Date (Oldest)",
+      "priority": "Sort by Priority"
+    }
+  },
+  "reports": {
+    "types": {
+      "caseReport": "Case Summary Report",
+      "evidenceReport": "Evidence Analysis Report",
+      "timelineReport": "Timeline Report",
+      "entityReport": "Entity Network Report"
+    },
+    "sections": {
+      "overview": "Case Overview",
+      "evidence": "Evidence Summary",
+      "analysis": "Analysis Results",
+      "timeline": "Event Timeline",
+      "recommendations": "Recommendations"
+    }
+  },
+  "settings": {
+    "categories": {
+      "profile": "User Profile",
+      "preferences": "Preferences",
+      "notifications": "Notifications",
+      "accessibility": "Accessibility",
+      "security": "Security Settings"
+    },
+    "accessibility": {
+      "highContrast": "High Contrast Mode",
+      "fontSize": "Font Size",
+      "screenReader": "Screen Reader Optimizations",
+      "keyboardNavigation": "Keyboard Navigation"
+    }
+  }
+}
