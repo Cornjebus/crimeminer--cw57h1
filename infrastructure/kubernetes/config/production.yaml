@@ -1,0 +1,193 @@
+# Production environment configuration for CrimeMiner platform
+# Implements FedRAMP High and CJIS compliant Kubernetes configuration
+# Version: 1.27+
+
+---
+# Resource Quotas for Production Namespaces
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: crimeminer-production-quota
+  namespace: crimeminer-system
+spec:
+  hard:
+    cpu: "32"
+    memory: "64Gi"
+    pods: "100"
+    services: "50"
+    persistentvolumeclaims: "20"
+    storage.ssd: "500Gi"
+    storage.hdd: "2Ti"
+    configmaps: "50"
+    secrets: "100"
+    networkpolicies: "20"
+
+---
+# Horizontal Pod Autoscaler Configuration
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: crimeminer-production-hpa
+  namespace: crimeminer-system
+spec:
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: External
+    external:
+      metric:
+        name: queue_depth
+        selector:
+          matchLabels:
+            queue: processing
+      target:
+        type: AverageValue
+        averageValue: 100
+
+---
+# Pod Security Policy
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: crimeminer-production-psp
+  annotations:
+    seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    seccomp.security.alpha.kubernetes.io/defaultProfileName: 'runtime/default'
+    apparmor.security.beta.kubernetes.io/defaultProfileName: 'runtime/default'
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'persistentVolumeClaim'
+    - 'secret'
+    - 'projected'
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  supplementalGroups:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1000
+        max: 65535
+  fsGroup:
+    rule: 'MustRunAs'
+    ranges:
+      - min: 1000
+        max: 65535
+  readOnlyRootFilesystem: true
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: crimeminer-production-pdb
+  namespace: crimeminer-system
+spec:
+  minAvailable: "50%"
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: crimeminer
+
+---
+# Network Policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: crimeminer-production-netpol
+  namespace: crimeminer-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: crimeminer
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: crimeminer
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              app.kubernetes.io/part-of: crimeminer
+
+---
+# Topology Spread Constraints
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: topology-spread-constraints
+  namespace: crimeminer-system
+data:
+  constraints: |
+    topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: crimeminer
+
+---
+# Audit Policy Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: audit-policy
+  namespace: crimeminer-system
+data:
+  policy.yaml: |
+    apiVersion: audit.k8s.io/v1
+    kind: Policy
+    rules:
+    - level: RequestResponse
+      resources:
+      - group: ""
+        resources: ["pods", "services", "configmaps", "secrets"]
+    - level: Metadata
+      resources:
+      - group: ""
+        resources: ["persistentvolumes", "nodes"]
+
+---
+# Compliance Labels and Annotations
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: compliance-config
+  namespace: crimeminer-system
+data:
+  labels: |
+    compliance-level: fedramp-high
+    security-context: high-security
+    data-classification: sensitive-law-enforcement
+  annotations: |
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    network.security.gov/isolation: strict
