@@ -1,0 +1,199 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Global timeline variables
+$timeline-height: 300px;
+$timeline-height-mobile: 200px;
+$event-marker-size: 12px;
+$event-marker-size-mobile: 16px;
+$timeline-line-height: 2px;
+$zoom-control-size: 32px;
+$event-label-offset: 24px;
+$timeline-padding: 32px;
+
+.timeline {
+  position: relative;
+  height: $timeline-height;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: $timeline-padding;
+  contain: layout size;
+  outline: none;
+  
+  // Accessibility attributes
+  role: region;
+  aria-label: "Case timeline";
+  
+  // Touch behavior
+  touch-action: pan-x pinch-zoom;
+  
+  // Scrollbar styling
+  @include scrollbar;
+  
+  // Responsive height adjustment
+  @include respond-to('mobile') {
+    height: $timeline-height-mobile;
+    padding: $spacing-scale.2;
+  }
+}
+
+.timeline__track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: $timeline-line-height;
+  transform: translateY(-50%);
+  z-index: map-get($z-index, 'timeline-track');
+  
+  @include theme-aware(
+    'background-color',
+    rgba(map-get($colors, 'border'), 0.5),
+    rgba(map-get($colors, 'border'), 0.3)
+  );
+  
+  @include high-contrast {
+    height: 3px;
+    background-color: currentColor;
+  }
+}
+
+.timeline__event {
+  position: absolute;
+  width: $event-marker-size;
+  height: $event-marker-size;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: map-get($z-index, 'timeline-event');
+  
+  @include theme-aware(
+    'background-color',
+    map-get($colors, 'primary'),
+    lighten(map-get($colors, 'primary'), 10%)
+  );
+  
+  @include touch-target(44px);
+  @include transition(transform, background-color);
+  
+  // Responsive sizing
+  @include respond-to('mobile') {
+    width: $event-marker-size-mobile;
+    height: $event-marker-size-mobile;
+  }
+  
+  // Interactive states
+  &:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    
+    @include theme-aware(
+      'background-color',
+      darken(map-get($colors, 'primary'), 10%),
+      lighten(map-get($colors, 'primary'), 20%)
+    );
+  }
+  
+  &:focus-visible {
+    @include focus-ring;
+    outline-offset: 2px;
+  }
+  
+  // High contrast mode support
+  @include high-contrast {
+    border: 2px solid currentColor;
+    background-color: transparent;
+  }
+}
+
+.timeline__event--important {
+  @include theme-aware(
+    'background-color',
+    map-get($colors, 'error'),
+    lighten(map-get($colors, 'error'), 10%)
+  );
+  
+  transform: translate(-50%, -50%) scale(1.2);
+  
+  @include high-contrast {
+    border-width: 3px;
+  }
+}
+
+.timeline__event--selected {
+  transform: translate(-50%, -50%) scale(1.3);
+  z-index: map-get($z-index, 'timeline-event') + 1;
+  
+  @include theme-aware(
+    'background-color',
+    darken(map-get($colors, 'primary'), 15%),
+    lighten(map-get($colors, 'primary'), 25%)
+  );
+  
+  box-shadow: 0 0 0 4px rgba(map-get($colors, 'primary'), 0.2);
+  
+  @include high-contrast {
+    box-shadow: 0 0 0 3px currentColor;
+  }
+}
+
+.timeline__event-label {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: map-get(map-get($typography, 'font-size'), 'sm');
+  text-align: center;
+  max-width: 200px;
+  margin-top: $event-label-offset;
+  pointer-events: none;
+  
+  @include truncate-text(1);
+  @include theme-aware(
+    'color',
+    map-get(map-get($colors, 'text'), 'light'),
+    map-get(map-get($colors, 'text'), 'dark')
+  );
+  
+  @include respond-to('mobile') {
+    font-size: map-get(map-get($typography, 'font-size'), 'xs');
+    margin-top: $event-label-offset * 0.75;
+  }
+}
+
+.timeline__zoom-controls {
+  position: absolute;
+  right: map-get($spacing-scale, 3);
+  bottom: map-get($spacing-scale, 3);
+  display: flex;
+  gap: map-get($spacing-scale, 2);
+  z-index: map-get($z-index, 'timeline-controls');
+  
+  @include respond-to('mobile') {
+    bottom: map-get($spacing-scale, 2);
+    right: map-get($spacing-scale, 2);
+  }
+  
+  button {
+    width: $zoom-control-size;
+    height: $zoom-control-size;
+    border-radius: 50%;
+    
+    @include theme-aware(
+      'background-color',
+      rgba(map-get($colors, 'background', 'light'), 0.9),
+      rgba(map-get($colors, 'background', 'dark'), 0.9)
+    );
+    
+    @include elevation(2);
+    @include clickable;
+    
+    &:focus-visible {
+      @include focus-ring;
+    }
+    
+    @include high-contrast {
+      border: 1px solid currentColor;
+      background-color: transparent;
+    }
+  }
+}
