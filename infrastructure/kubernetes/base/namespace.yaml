@@ -1,0 +1,97 @@
+# Kubernetes v1.27+
+# Defines core namespaces for CrimeMiner platform with FedRAMP High compliance and CJIS security controls
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crimeminer-system
+  labels:
+    istio-injection: enabled
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    security-context: high-security
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: system
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    network.security.gov/isolation: strict
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crimeminer-backend
+  labels:
+    istio-injection: enabled
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    security-context: high-security
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: backend
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    network.security.gov/isolation: strict
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crimeminer-frontend
+  labels:
+    istio-injection: enabled
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    security-context: high-security
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: frontend
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    network.security.gov/isolation: strict
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crimeminer-ml
+  labels:
+    istio-injection: enabled
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    security-context: high-security
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: ml
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    network.security.gov/isolation: strict
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crimeminer-monitoring
+  labels:
+    istio-injection: enabled
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    security-context: high-security
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: monitoring
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+    network.security.gov/isolation: strict
