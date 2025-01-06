@@ -1,0 +1,36 @@
+# Requires project lead review for unspecified files
+* @project-leads
+
+# Backend services requiring mandatory review from both backend and security teams
+# for FedRAMP compliance
+src/backend/** @backend-team @security-team
+
+# Frontend application requiring frontend team review with accessibility compliance
+src/web/** @frontend-team @accessibility-team
+
+# Infrastructure code requiring both DevOps and security review
+infrastructure/** @devops-team @security-team
+
+# CI/CD workflows requiring DevOps and security review
+.github/workflows/** @devops-team @security-team
+
+# Authentication service requiring triple review from security, backend, and compliance teams
+src/backend/auth/** @security-team @backend-team @compliance-team
+
+# Machine learning service requiring ML, backend, and security team review
+src/backend/ml/** @ml-team @backend-team @security-team
+
+# Evidence processing service requiring backend, security, and compliance review
+src/backend/evidence-processing/** @backend-team @security-team @compliance-team
+
+# Security configurations requiring both security and compliance team review
+infrastructure/security/** @security-team @compliance-team
+
+# Kubernetes secrets requiring security, DevOps, and compliance team review
+infrastructure/kubernetes/secrets/** @security-team @devops-team @compliance-team
+
+# Audit service requiring security, compliance, and backend team review
+src/backend/audit/** @security-team @compliance-team @backend-team
+
+# Security documentation requiring security and compliance team review
+docs/security/** @security-team @compliance-team
