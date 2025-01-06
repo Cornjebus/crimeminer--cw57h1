@@ -1,0 +1,169 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Main Analysis Page Layout
+.analysis-page {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: map-get(map-get($grid, gutter), desktop);
+  padding: map-get($spacing-scale, 5);
+  height: 100dvh;
+  overflow: hidden;
+  contain: layout size;
+  will-change: contents;
+
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  @include transition(background-color);
+}
+
+// Timeline Section
+.timeline-section {
+  grid-column: 1 / -1;
+  height: min(200px, 25vh);
+  margin-bottom: map-get($spacing-scale, 4);
+  border-radius: 8px;
+  padding: map-get($spacing-scale, 3);
+  
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  @include elevation(2);
+  @include transition(background-color, box-shadow);
+
+  @include respond-to(mobile) {
+    height: min(150px, 20vh);
+    margin-bottom: map-get($spacing-scale, 3);
+  }
+}
+
+// Network Graph Section
+.network-section {
+  grid-column: 1 / 9;
+  height: calc(100dvh - min(200px, 25vh) - #{map-get($spacing-scale, 4)} * 3);
+  padding: map-get($spacing-scale, 3);
+  border-radius: 8px;
+  
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  @include elevation(2);
+  @include transition(background-color, box-shadow);
+  
+  @include respond-to(mobile) {
+    grid-column: 1 / -1;
+    height: min(400px, 50vh);
+    margin-bottom: map-get($spacing-scale, 3);
+  }
+
+  @include respond-to(tablet) {
+    grid-column: 1 / 8;
+    height: calc(100dvh - min(150px, 20vh) - #{map-get($spacing-scale, 3)} * 3);
+  }
+}
+
+// Entity List Section
+.entity-section {
+  grid-column: 9 / -1;
+  height: calc(100dvh - min(200px, 25vh) - #{map-get($spacing-scale, 4)} * 3);
+  padding: map-get($spacing-scale, 3);
+  border-radius: 8px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  @include elevation(2);
+  @include transition(background-color, box-shadow);
+  @include scrollbar;
+  
+  @include respond-to(mobile) {
+    grid-column: 1 / -1;
+    height: min(400px, 50vh);
+  }
+
+  @include respond-to(tablet) {
+    grid-column: 8 / -1;
+    height: calc(100dvh - min(150px, 20vh) - #{map-get($spacing-scale, 3)} * 3);
+  }
+}
+
+// Loading States
+.loading-state {
+  @include flex-center;
+  min-height: 200px;
+  
+  @include theme-aware(
+    'background-color',
+    lighten(map-get(map-get($colors, background), light), 2%),
+    darken(map-get(map-get($colors, background), dark), 2%)
+  );
+  
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+// Error States
+.error-state {
+  @include flex-center;
+  min-height: 200px;
+  padding: map-get($spacing-scale, 3);
+  
+  @include theme-aware(
+    'background-color',
+    lighten(map-get($colors, error), 45%),
+    darken(map-get($colors, error), 30%)
+  );
+  
+  @include theme-aware(
+    'color',
+    map-get($colors, error),
+    lighten(map-get($colors, error), 20%)
+  );
+}
+
+// High Contrast Mode Overrides
+@include high-contrast {
+  .timeline-section,
+  .network-section,
+  .entity-section {
+    border: 2px solid map-get(map-get($colors, text), dark);
+    box-shadow: none;
+  }
+}
+
+// Print Styles
+@media print {
+  .analysis-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .network-section,
+  .entity-section {
+    height: auto;
+    page-break-inside: avoid;
+  }
+}
+
+// Loading Animation
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
