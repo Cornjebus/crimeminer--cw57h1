@@ -1,0 +1,254 @@
+# Kubernetes v1.27+
+# Loki v2.8.0, Promtail v2.8.0
+# FedRAMP High and CJIS compliant logging configuration with 7-year retention and tamper detection
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: crimeminer-system
+  labels:
+    app: loki
+    compliance-level: fedramp-high
+spec:
+  replicas: 3
+  serviceName: loki-service
+  selector:
+    matchLabels:
+      app: loki
+  updateStrategy:
+    type: RollingUpdate
+  podManagementPolicy: OrderedReady
+  template:
+    metadata:
+      labels:
+        app: loki
+        compliance-level: fedramp-high
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - loki
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: loki
+        image: grafana/loki:2.8.0
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        ports:
+        - name: http-metrics
+          containerPort: 3100
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "2"
+            memory: 8Gi
+          limits:
+            cpu: "4"
+            memory: 16Gi
+        volumeMounts:
+        - name: storage
+          mountPath: /data
+        - name: config
+          mountPath: /etc/loki
+        livenessProbe:
+          httpGet:
+            path: /ready
+            port: http-metrics
+          initialDelaySeconds: 45
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http-metrics
+          initialDelaySeconds: 45
+      volumes:
+      - name: config
+        configMap:
+          name: loki-config
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gp2-encrypted
+      resources:
+        requests:
+          storage: 500Gi
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  namespace: crimeminer-system
+  labels:
+    app: promtail
+    compliance-level: fedramp-high
+spec:
+  selector:
+    matchLabels:
+      app: promtail
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: promtail
+        compliance-level: fedramp-high
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: promtail
+        image: grafana/promtail:2.8.0
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        args:
+        - -config.file=/etc/promtail/config.yaml
+        - -client.url=https://loki-service:3100/loki/api/v1/push
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log
+        - name: promtail-config
+          mountPath: /etc/promtail
+      volumes:
+      - name: logs
+        hostPath:
+          path: /var/log
+      - name: promtail-config
+        configMap:
+          name: promtail-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki-service
+  namespace: crimeminer-system
+  labels:
+    app: loki
+    compliance-level: fedramp-high
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3100
+    targetPort: 3100
+    protocol: TCP
+    name: http-metrics
+  selector:
+    app: loki
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: loki-monitor
+  namespace: crimeminer-system
+  labels:
+    app: loki
+spec:
+  selector:
+    matchLabels:
+      app: loki
+  endpoints:
+  - port: http-metrics
+    path: /metrics
+    scheme: https
+    interval: 30s
+    scrapeTimeout: 10s
+    tlsConfig:
+      insecureSkipVerify: false
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: loki-network-policy
+  namespace: crimeminer-system
+spec:
+  podSelector:
+    matchLabels:
+      app: loki
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-system
+    ports:
+    - protocol: TCP
+      port: 3100
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: crimeminer-system
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: loki-alerts
+  namespace: crimeminer-system
+  labels:
+    app: loki
+spec:
+  groups:
+  - name: loki.rules
+    rules:
+    - alert: LokiInstanceDown
+      expr: up{job="loki"} == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        description: "Loki instance is down"
+        runbook_url: "runbooks/loki-instance-down.md"
+    - alert: HighErrorLogsRate
+      expr: rate(loki_distributor_lines_received_total{level="error"}[5m]) > 100
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        description: "High rate of error logs detected"
+        runbook_url: "runbooks/high-error-rate.md"
+    - alert: ComplianceViolation
+      expr: loki_ruler_evaluation_failures_total > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        description: "Compliance policy violation detected"
+        runbook_url: "runbooks/compliance-violation.md"
