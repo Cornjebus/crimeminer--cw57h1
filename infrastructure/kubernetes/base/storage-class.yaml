@@ -1,0 +1,77 @@
+# Kubernetes v1.27+
+# Storage classes for CrimeMiner platform with FedRAMP High and CJIS compliance
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: evidence-storage
+  labels:
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    encryption: enabled
+    backup-policy: required
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ID}
+  iops: "16000"
+  fsType: ext4
+  wormEnabled: "true"
+  retentionPeriod: "7years"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+mountOptions:
+  - noatime
+  - nodiratime
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: database-storage
+  labels:
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    encryption: enabled
+    backup-policy: required
+provisioner: ebs.csi.aws.com
+parameters:
+  type: io2
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ID}
+  iops: "64000"
+  fsType: ext4
+  throughput: "1000"
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+mountOptions:
+  - noatime
+  - nodiratime
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: monitoring-storage
+  labels:
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+    encryption: enabled
+    backup-policy: optional
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ID}
+  iops: "3000"
+  fsType: ext4
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+mountOptions:
+  - noatime
+  - nodiratime
