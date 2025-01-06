@@ -1,0 +1,199 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Main login page wrapper
+.login-page {
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate; // Create stacking context for security
+  z-index: map-get($z-index, modal);
+  
+  @include flex-center(column);
+  @include theme-aware(
+    'background',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  
+  padding: map-get($spacing-scale, 4);
+  
+  @include respond-to('mobile') {
+    padding: map-get($spacing-scale, 3);
+  }
+}
+
+// Secure container for login form
+.login-container {
+  width: 100%;
+  max-width: 400px;
+  background-color: transparent;
+  
+  @include theme-aware(
+    'background',
+    rgba(map-get(map-get($colors, background), light), 0.95),
+    rgba(map-get(map-get($colors, background), dark), 0.95)
+  );
+  
+  @include elevation(3);
+  
+  border-radius: 8px;
+  padding: map-get($spacing-scale, 5);
+  
+  // Enhanced border for high contrast mode
+  @include high-contrast {
+    border: 2px solid map-get($colors, primary);
+    box-shadow: none;
+  }
+  
+  @include respond-to('mobile') {
+    max-width: 100%;
+    margin: map-get($spacing-scale, 3);
+    padding: map-get($spacing-scale, 4);
+  }
+  
+  // Secure focus handling
+  &:focus-within {
+    @include focus-ring('primary');
+  }
+}
+
+// Enhanced form layout
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing-scale, 4);
+  
+  @include respond-to('mobile') {
+    gap: map-get($spacing-scale, 3);
+  }
+}
+
+// Form field wrapper
+.form-field {
+  position: relative;
+  
+  label {
+    display: block;
+    margin-bottom: map-get($spacing-scale, 2);
+    font-family: map-get(map-get($typography, font-family), primary);
+    font-weight: map-get(map-get($typography, font-weight), medium);
+    
+    @include theme-aware(
+      'color',
+      map-get(map-get($colors, text), light),
+      map-get(map-get($colors, text), dark)
+    );
+  }
+  
+  input {
+    width: 100%;
+    padding: map-get($spacing-scale, 3);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    font-family: map-get(map-get($typography, font-family), primary);
+    font-size: map-get(map-get($typography, font-size), md);
+    
+    @include theme-aware(
+      'background',
+      lighten(map-get(map-get($colors, background), light), 3%),
+      darken(map-get(map-get($colors, background), dark), 3%)
+    );
+    
+    @include theme-aware(
+      'color',
+      map-get(map-get($colors, text), light),
+      map-get(map-get($colors, text), dark)
+    );
+    
+    &:focus {
+      @include focus-ring('primary');
+      outline: none;
+    }
+    
+    // High contrast mode enhancements
+    @include high-contrast {
+      border: 2px solid currentColor;
+    }
+  }
+}
+
+// Error state styling
+.error-message {
+  color: map-get($colors, error);
+  font-size: map-get(map-get($typography, font-size), sm);
+  margin-top: map-get($spacing-scale, 2);
+  
+  @include high-contrast {
+    font-weight: map-get(map-get($typography, font-weight), bold);
+  }
+}
+
+// Submit button styling
+.submit-button {
+  width: 100%;
+  padding: map-get($spacing-scale, 3);
+  border: none;
+  border-radius: 4px;
+  background-color: map-get($colors, primary);
+  color: #FFFFFF;
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  font-size: map-get(map-get($typography, font-size), md);
+  cursor: pointer;
+  
+  @include transition(background-color, transform);
+  
+  &:hover:not(:disabled) {
+    background-color: darken(map-get($colors, primary), 10%);
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  
+  &:focus {
+    @include focus-ring('primary');
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  // High contrast mode enhancements
+  @include high-contrast {
+    border: 2px solid currentColor;
+    font-weight: map-get(map-get($typography, font-weight), bold);
+  }
+}
+
+// Screen reader only elements
+.sr-only {
+  @include screen-reader-only;
+}
+
+// Loading state indicator
+.loading-spinner {
+  @include flex-center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  
+  @include theme-aware(
+    'background',
+    rgba(255, 255, 255, 0.8),
+    rgba(0, 0, 0, 0.8)
+  );
+  
+  // Ensure loading state is announced to screen readers
+  &[aria-busy="true"] {
+    &::after {
+      content: "Loading...";
+      @include screen-reader-only;
+    }
+  }
+}
