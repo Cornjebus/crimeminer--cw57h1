@@ -1,0 +1,281 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(security_incidents_total{job='api-gateway',severity=~'critical|high'}[1m]) > 0",
+        "name": "Security Incidents",
+        "showIn": 0,
+        "tags": ["security", "incident"],
+        "type": "prometheus"
+      },
+      {
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(compliance_violations_total{job='api-gateway'}[1m]) > 0",
+        "name": "Compliance Alerts",
+        "showIn": 0,
+        "tags": ["compliance", "violation"],
+        "type": "prometheus"
+      },
+      {
+        "datasource": "Prometheus",
+        "enable": true,
+        "expr": "changes(system_events_total{job='api-gateway',type=~'deployment|scaling|restart'}[1m]) > 0",
+        "name": "System Events",
+        "showIn": 0,
+        "tags": ["system", "event"],
+        "type": "prometheus"
+      }
+    ]
+  },
+  "description": "FedRAMP and CJIS compliant API Gateway monitoring dashboard for CrimeMiner platform",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "green", "value": 0.9 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        }
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "expr": "up{job='api-gateway'}",
+          "legendFormat": "Gateway Status"
+        },
+        {
+          "expr": "sum(gateway_health_score{job='api-gateway'})/count(gateway_health_score{job='api-gateway'})",
+          "legendFormat": "Health Score"
+        }
+      ],
+      "title": "Gateway Health Overview",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+      "id": 2,
+      "options": {
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "9.5.3",
+      "targets": [
+        {
+          "expr": "security_compliance_score{job='api-gateway',compliance_type=~'fedramp|cjis'}",
+          "legendFormat": "{{compliance_type}} Compliance"
+        }
+      ],
+      "title": "Security Compliance Status",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "spanNulls": false,
+            "showPoints": "never"
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (downstream_service) (rate(http_requests_total{job='api-gateway'}[5m]))",
+          "legendFormat": "{{downstream_service}} - Success"
+        },
+        {
+          "expr": "sum by (downstream_service) (rate(http_requests_total{job='api-gateway',status_code=~'5..|4..'}[5m]))",
+          "legendFormat": "{{downstream_service}} - Errors"
+        }
+      ],
+      "title": "Request Rate by Service",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 70,
+            "lineWidth": 1,
+            "spanNulls": false
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "id": 4,
+      "options": {
+        "showValue": "auto"
+      },
+      "targets": [
+        {
+          "expr": "security_events_total{job='api-gateway',severity=~'critical|high'}",
+          "legendFormat": "Security Events - {{severity}}"
+        },
+        {
+          "expr": "authentication_failures_total{job='api-gateway'}",
+          "legendFormat": "Auth Failures"
+        }
+      ],
+      "title": "Security Events Timeline",
+      "type": "state-timeline"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
+      "id": 5,
+      "options": {
+        "showHeader": true,
+        "sortBy": [["Time", "desc"]]
+      },
+      "targets": [
+        {
+          "expr": "audit_log_entries_total{job='api-gateway'}",
+          "legendFormat": "Audit Logs"
+        },
+        {
+          "expr": "compliance_violations_total{job='api-gateway'}",
+          "legendFormat": "Compliance Violations"
+        }
+      ],
+      "title": "Compliance Audit Log",
+      "type": "table"
+    }
+  ],
+  "refresh": "15s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["api-gateway", "monitoring", "security", "compliance", "fedramp", "cjis"],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "production",
+          "value": "production"
+        },
+        "name": "environment",
+        "options": [
+          { "text": "production", "value": "production" },
+          { "text": "staging", "value": "staging" },
+          { "text": "development", "value": "development" }
+        ],
+        "type": "custom",
+        "secure": true
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "all",
+          "value": "all"
+        },
+        "name": "compliance_type",
+        "options": [
+          { "text": "fedramp", "value": "fedramp" },
+          { "text": "cjis", "value": "cjis" },
+          { "text": "all", "value": "all" }
+        ],
+        "type": "custom",
+        "secure": true
+      },
+      {
+        "datasource": "Prometheus",
+        "name": "downstream_service",
+        "query": "label_values(http_requests_total{job='api-gateway'}, downstream_service)",
+        "type": "query",
+        "secure": true
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["15s", "30s", "1m", "5m", "15m", "30m", "1h"],
+    "time_options": ["5m", "15m", "30m", "1h", "3h", "6h", "12h", "24h", "7d", "30d"]
+  },
+  "timezone": "browser",
+  "title": "CrimeMiner API Gateway - FedRAMP Compliant Monitoring",
+  "uid": "crimeminer-api-gateway-v2",
+  "version": 1,
+  "weekStart": "",
+  "security_settings": {
+    "min_refresh_interval": "15s",
+    "data_retention": "365d",
+    "access_control": {
+      "role_required": "api_gateway_monitor",
+      "permissions": ["view", "explore"],
+      "audit_logging": true
+    }
+  }
+}
