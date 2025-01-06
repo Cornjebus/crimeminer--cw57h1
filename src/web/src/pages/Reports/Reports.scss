@@ -1,0 +1,182 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+.reports-page {
+  @include grid-container;
+  padding: map-get($spacing-scale, 4);
+
+  @include respond-to('mobile') {
+    padding: map-get($spacing-scale, 3);
+  }
+}
+
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: map-get($spacing-scale, 4);
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+    gap: map-get($spacing-scale, 3);
+  }
+
+  h1 {
+    font-family: map-get(map-get($typography, font-family), primary);
+    font-size: map-get(map-get($typography, font-size), 2xl);
+    font-weight: map-get(map-get($typography, font-weight), bold);
+    color: map-get(map-get($colors, text), light);
+
+    @include theme-aware('color', 
+      map-get(map-get($colors, text), light),
+      map-get(map-get($colors, text), dark)
+    );
+  }
+}
+
+.reports-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: map-get($spacing-scale, 3);
+  margin-bottom: map-get($spacing-scale, 4);
+  
+  .filter-control {
+    @include theme-aware('background-color',
+      map-get(map-get($colors, background), light),
+      map-get(map-get($colors, background), dark)
+    );
+    padding: map-get($spacing-scale, 2) map-get($spacing-scale, 3);
+    border-radius: 4px;
+    border: 1px solid map-get($colors, border);
+
+    @include focus-ring('primary');
+    @include clickable;
+    
+    &:hover {
+      @include theme-aware('border-color',
+        map-get($colors, primary),
+        map-get($colors, primary)
+      );
+    }
+  }
+}
+
+.reports-list {
+  display: grid;
+  gap: map-get($spacing-scale, 3);
+  
+  @include respond-to('mobile') {
+    grid-template-columns: 1fr;
+  }
+  
+  @include respond-to('tablet') {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include respond-to('desktop') {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.report-card {
+  @include elevation(2);
+  padding: map-get($spacing-scale, 3);
+  border-radius: 8px;
+  
+  @include theme-aware('background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  
+  @include transition(transform, box-shadow);
+  
+  &:hover {
+    transform: translateY(-2px);
+    @include elevation(3);
+  }
+  
+  &:focus-within {
+    @include focus-ring('primary');
+  }
+  
+  .report-title {
+    @include truncate-text(2);
+    font-size: map-get(map-get($typography, font-size), lg);
+    font-weight: map-get(map-get($typography, font-weight), medium);
+    margin-bottom: map-get($spacing-scale, 2);
+  }
+  
+  .report-meta {
+    display: flex;
+    gap: map-get($spacing-scale, 2);
+    font-size: map-get(map-get($typography, font-size), sm);
+    color: map-get(map-get($colors, text), light);
+    opacity: 0.8;
+    
+    @include theme-aware('color',
+      map-get(map-get($colors, text), light),
+      map-get(map-get($colors, text), dark)
+    );
+  }
+  
+  .report-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: map-get($spacing-scale, 2);
+    margin-top: map-get($spacing-scale, 3);
+    
+    button {
+      @include clickable;
+      @include focus-ring('primary');
+      padding: map-get($spacing-scale, 2);
+      border-radius: 4px;
+      
+      &:hover {
+        @include theme-aware('background-color',
+          rgba(map-get($colors, primary), 0.1),
+          rgba(map-get($colors, primary), 0.2)
+        );
+      }
+    }
+  }
+}
+
+// Accessibility Enhancements
+@include high-contrast {
+  .report-card {
+    border: 2px solid currentColor;
+    box-shadow: none;
+  }
+  
+  .filter-control {
+    border-width: 2px;
+  }
+}
+
+// Screen Reader Only Elements
+.sr-only {
+  @include screen-reader-only;
+}
+
+// Print Styles
+@media print {
+  .reports-page {
+    padding: 0;
+  }
+  
+  .reports-filters,
+  .report-actions {
+    display: none;
+  }
+  
+  .reports-list {
+    grid-template-columns: 1fr;
+    gap: map-get($spacing-scale, 4);
+  }
+  
+  .report-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid map-get($colors, border);
+  }
+}
