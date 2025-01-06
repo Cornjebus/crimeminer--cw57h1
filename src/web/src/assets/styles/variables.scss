@@ -1,0 +1,120 @@
+// CrimeMiner Design System Variables
+// Version: 1.0.0
+
+// Typography
+// Font: Inter v3.19 (Primary), JetBrains Mono v2.304 (Monospace)
+$typography: (
+  font-family: (
+    primary: 'Inter, system-ui, -apple-system, sans-serif',
+    monospace: 'JetBrains Mono, monospace'
+  ),
+  font-size: (
+    base: 16px,
+    xs: 0.75rem,    // 12px
+    sm: 0.875rem,   // 14px
+    md: 1rem,       // 16px
+    lg: 1.125rem,   // 18px
+    xl: 1.25rem,    // 20px
+    2xl: 1.5rem,    // 24px
+    3xl: 1.875rem,  // 30px
+    4xl: 2.25rem    // 36px
+  ),
+  font-weight: (
+    regular: 400,
+    medium: 500,
+    bold: 700
+  ),
+  line-height: (
+    tight: 1.25,
+    normal: 1.5,
+    relaxed: 1.75
+  )
+);
+
+// Colors - WCAG 2.1 AA Compliant
+$colors: (
+  background: (
+    light: #FFFFFF,
+    dark: #1E1E1E
+  ),
+  text: (
+    light: #333333,  // Contrast ratio 12.63:1 on light bg
+    dark: #FFFFFF    // Contrast ratio 15.75:1 on dark bg
+  ),
+  primary: #1A73E8,    // Brand primary
+  secondary: #34A853,  // Brand secondary
+  error: #EA4335,      // Error/Danger
+  warning: #FBBC04,    // Warning/Alert
+  border: #CCCCCC      // Border/Divider
+);
+
+// Spacing Scale (8px Grid)
+$spacing-scale: (
+  0: 0,
+  1: 4px,   // Quarter spacing unit
+  2: 8px,   // Base spacing unit
+  3: 16px,  // 2x base
+  4: 24px,  // 3x base
+  5: 32px,  // 4x base
+  6: 48px,  // 6x base
+  7: 64px   // 8x base
+);
+
+// Responsive Breakpoints
+$breakpoints: (
+  mobile: 320px,
+  tablet: 768px,
+  desktop: 1024px,
+  large: 1440px
+);
+
+// Grid System Configuration
+$grid: (
+  columns: 12,
+  gutter: (
+    mobile: 16px,
+    tablet: 24px,
+    desktop: 32px
+  ),
+  max-width: 1440px
+);
+
+// Z-Index Scale
+$z-index: (
+  modal: 1000,    // Modal/Dialog
+  overlay: 900,   // Overlay/Backdrop
+  dropdown: 800,  // Dropdowns/Popovers
+  header: 700,    // Header/Navigation
+  footer: 600     // Footer
+);
+
+// Transitions & Animations
+$transitions: (
+  duration: (
+    fast: 150ms,
+    normal: 300ms,
+    slow: 500ms
+  ),
+  timing: (
+    ease-in-out: cubic-bezier(0.4, 0, 0.2, 1),
+    ease-out: cubic-bezier(0.0, 0, 0.2, 1),
+    ease-in: cubic-bezier(0.4, 0, 1, 1)
+  )
+);
+
+// Utility Functions
+@function px-to-rem($px) {
+  $base-font-size: map-get(map-get($typography, font-size), base);
+  @return #{$px / $base-font-size}rem;
+}
+
+// Export maps for use in other files
+:export {
+  typography: $typography;
+  colors: $colors;
+  spacing: $spacing-scale;
+  breakpoints: $breakpoints;
+  grid: $grid;
+  z-index: $z-index;
+  transitions: $transitions;
+}
