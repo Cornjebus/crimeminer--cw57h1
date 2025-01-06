@@ -1,0 +1,143 @@
+# Prometheus Alerts Configuration v2.44.0
+# Defines critical alerts and notifications for the CrimeMiner platform
+
+groups:
+  # Service Availability Alerts
+  - name: service_availability_alerts
+    rules:
+      - alert: ServiceDown
+        expr: service:up:ratio < 0.999
+        for: 5m
+        labels:
+          severity: critical
+          type: availability
+        annotations:
+          summary: Service availability below 99.9%
+          description: '{{ $labels.service }} availability has dropped below 99.9% for 5 minutes'
+          
+      - alert: HighErrorRate
+        expr: service:request_errors:ratio > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          type: errors
+        annotations:
+          summary: High error rate detected
+          description: '{{ $labels.service }} is experiencing error rate above 1%'
+
+  # Resource Utilization Alerts
+  - name: resource_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: service:cpu:usage > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          type: resource
+        annotations:
+          summary: High CPU utilization
+          description: '{{ $labels.service }} CPU usage above 85% for 10 minutes'
+          
+      - alert: HighMemoryUsage
+        expr: service:memory:usage > 0.9
+        for: 10m
+        labels:
+          severity: warning
+          type: resource
+        annotations:
+          summary: High memory utilization
+          description: '{{ $labels.service }} memory usage above 90% for 10 minutes'
+
+  # Performance Alerts
+  - name: performance_alerts
+    rules:
+      - alert: SlowEvidenceProcessing
+        expr: evidence:processing:rate < 1000
+        for: 15m
+        labels:
+          severity: warning
+          type: performance
+        annotations:
+          summary: Slow evidence processing rate
+          description: Evidence processing rate has dropped below 1000 items/minute
+          
+      - alert: HighMLLatency
+        expr: ml:inference:latency > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          type: performance
+        annotations:
+          summary: High ML inference latency
+          description: 'ML model {{ $labels.model }} inference latency above 0.5 seconds'
+
+  # Security and Compliance Alerts
+  - name: security_alerts
+    rules:
+      - alert: HighAuthFailures
+        expr: security:auth:failures > 100
+        for: 5m
+        labels:
+          severity: critical
+          type: security
+        annotations:
+          summary: High number of authentication failures
+          description: '{{ $labels.service }} has experienced over 100 auth failures in 5 minutes'
+          
+      - alert: LowAuditCoverage
+        expr: compliance:audit:coverage < 0.98
+        for: 1h
+        labels:
+          severity: warning
+          type: compliance
+        annotations:
+          summary: Low audit coverage detected
+          description: 'Audit coverage for {{ $labels.service }} has dropped below 98%'
+          
+      - alert: EncryptionStatus
+        expr: security:encryption:status != 1
+        for: 5m
+        labels:
+          severity: critical
+          type: security
+        annotations:
+          summary: Data encryption issue detected
+          description: 'Encryption status check failed for {{ $labels.service }}'
+          
+      - alert: BackupFailure
+        expr: backup:job:status != 1
+        for: 1h
+        labels:
+          severity: critical
+          type: compliance
+        annotations:
+          summary: Backup job failure detected
+          description: 'Backup job for {{ $labels.service }} has failed'
+          
+      - alert: CertificateExpiration
+        expr: certificate:days_until_expiry < 30
+        for: 1h
+        labels:
+          severity: warning
+          type: security
+        annotations:
+          summary: Certificate expiration warning
+          description: 'Certificate for {{ $labels.service }} will expire in less than 30 days'
+          
+      - alert: ComplianceScanFailure
+        expr: compliance:scan:status != 1
+        for: 1h
+        labels:
+          severity: critical
+          type: compliance
+        annotations:
+          summary: Compliance scan failure
+          description: 'Compliance scan for {{ $labels.service }} has failed'
+
+# Global configuration
+global:
+  evaluation_interval: 30s
+  scrape_interval: 15s
+
+# Alert rule evaluation and scraping intervals are set to meet
+# FedRAMP High and CJIS compliance requirements for monitoring frequency
