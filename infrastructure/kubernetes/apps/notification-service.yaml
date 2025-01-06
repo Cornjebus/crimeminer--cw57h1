@@ -1,0 +1,201 @@
+# Kubernetes manifest for CrimeMiner notification service deployment
+# Implements FedRAMP High and CJIS compliant real-time notification system
+# Version: 1.27+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: crimeminer-backend
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: notifications
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+    policy.security.gov/encryption-required: "true"
+    audit.security.gov/level: detailed
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+      security-tier: restricted
+      compliance: fedramp-high
+  template:
+    metadata:
+      labels:
+        app: notification-service
+        compliance-level: fedramp-high
+        data-classification: sensitive-law-enforcement
+        security-tier: restricted
+        istio-injection: enabled
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        sidecar.istio.io/inject: "true"
+        security.istio.io/tlsMode: strict
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: notification-service
+          image: notification-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3004
+              name: http
+              protocol: TCP
+            - containerPort: 3005
+              name: websocket
+              protocol: TCP
+            - containerPort: 9090
+              name: metrics
+              protocol: TCP
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3004"
+            - name: WS_PORT
+              value: "3005"
+            - name: COMPLIANCE_LEVEL
+              value: "fedramp-high"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+              readOnly: false
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - notification-service
+                topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: crimeminer-backend
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: crimeminer
+    compliance-level: fedramp-high
+  annotations:
+    security.istio.io/tlsMode: strict
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - name: https
+      port: 443
+      targetPort: http
+      protocol: TCP
+    - name: wss
+      port: 8443
+      targetPort: websocket
+      protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: notification-service-hpa
+  namespace: crimeminer-backend
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/part-of: crimeminer
+    compliance-level: fedramp-high
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: notification-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: notification-service-dr
+  namespace: crimeminer-backend
+spec:
+  host: notification-service
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
