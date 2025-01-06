@@ -1,0 +1,153 @@
+# Kubernetes v1.27+
+# RBAC configuration for CrimeMiner platform implementing FedRAMP High and CJIS compliant access controls
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: investigator-role
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+    cjis.fbi.gov/compliance-required: "true"
+    audit.security.gov/log-level: "detailed"
+    rbac.security.gov/role-type: "investigator"
+    security.gov/requires-mfa: "true"
+rules:
+- apiGroups: ["crimeminer.justice.gov/v1"]
+  resources: ["cases", "evidence"]
+  verbs: ["get", "list", "create", "update"]
+  resourceNames: ["${assigned-cases}"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get"]
+  resourceNames: ["case-configs"]
+- apiGroups: ["audit.k8s.io"]
+  resources: ["events"]
+  verbs: ["create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: supervisor-role
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+    cjis.fbi.gov/compliance-required: "true"
+    audit.security.gov/log-level: "comprehensive"
+    rbac.security.gov/role-type: "supervisor"
+    security.gov/requires-mfa: "true"
+rules:
+- apiGroups: ["crimeminer.justice.gov/v1"]
+  resources: ["cases", "evidence", "users"]
+  verbs: ["*"]
+  resourceNames: ["${department-resources}"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list"]
+  resourceNames: ["department-configs", "department-secrets"]
+- apiGroups: ["audit.k8s.io"]
+  resources: ["events", "audits"]
+  verbs: ["get", "list", "create"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: admin-role
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+    cjis.fbi.gov/compliance-required: "true"
+    audit.security.gov/log-level: "full"
+    rbac.security.gov/role-type: "administrator"
+    security.gov/requires-mfa: "true"
+    security.gov/privileged-access: "true"
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["audit.k8s.io"]
+  resources: ["*"]
+  verbs: ["*"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: service-account-role
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+    security.gov/auto-rotation: "enabled"
+    audit.security.gov/log-level: "detailed"
+    rbac.security.gov/role-type: "service-account"
+rules:
+- apiGroups: [""]
+  resources: ["secrets", "configmaps"]
+  verbs: ["get", "list"]
+  resourceNames: ["${service-specific-resources}"]
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "list"]
+  namespaces: ["crimeminer-system"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: investigator-role-binding
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+subjects:
+- kind: Group
+  name: investigators
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: investigator-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: supervisor-role-binding
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+subjects:
+- kind: Group
+  name: supervisors
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: supervisor-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-role-binding
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+subjects:
+- kind: Group
+  name: administrators
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: admin-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: service-account-role-binding
+  annotations:
+    fedramp.security.gov/control-baseline: "high"
+subjects:
+- kind: ServiceAccount
+  name: crimeminer-service
+  namespace: crimeminer-system
+roleRef:
+  kind: ClusterRole
+  name: service-account-role
+  apiGroup: rbac.authorization.k8s.io
