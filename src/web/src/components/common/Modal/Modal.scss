@@ -1,0 +1,144 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+// Modal Overlay - Fixed backdrop with blur effect
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: map-get($z-index, overlay);
+  backdrop-filter: blur(4px);
+  transition: opacity map-get(map-get($transitions, duration), normal) map-get(map-get($transitions, timing), ease-in-out);
+  will-change: opacity;
+  aria-hidden: true;
+}
+
+// Modal Container - Handles positioning and dimensions
+.modal-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: map-get($z-index, modal);
+  min-width: 320px;
+  max-width: 90%;
+  max-height: 90vh;
+  border-radius: map-get($spacing-scale, 2);
+  overflow: hidden;
+  transition: transform map-get(map-get($transitions, duration), normal) map-get(map-get($transitions, timing), ease-out);
+  will-change: transform;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+
+  @include respond-to(mobile) {
+    width: 100%;
+    margin: map-get($spacing-scale, 2);
+    max-height: calc(100vh - #{map-get($spacing-scale, 4)});
+  }
+
+  @include respond-to(tablet) {
+    width: 600px;
+    max-height: 80vh;
+  }
+}
+
+// Modal Component - Main wrapper with accessibility enhancements
+.modal {
+  display: flex;
+  flex-direction: column;
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  @include focus-ring;
+  role: dialog;
+  aria-modal: true;
+  outline: none;
+
+  // Header section with improved contrast
+  &-header {
+    padding: map-get($spacing-scale, 3);
+    @include theme-aware(
+      'border-bottom',
+      '1px solid #{map-get($colors, border)}',
+      '1px solid #{rgba(map-get($colors, border), 0.2)}'
+    );
+    @include flex-center(space-between);
+    min-height: map-get($spacing-scale, 6);
+    font-weight: map-get(map-get($typography, font-weight), bold);
+  }
+
+  // Content area with enhanced scrolling
+  &-content {
+    padding: map-get($spacing-scale, 3);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    min-height: map-get($spacing-scale, 8);
+    max-height: calc(90vh - #{map-get($spacing-scale, 12)});
+    @include scrollbar;
+  }
+
+  // Footer with improved button layout
+  &-footer {
+    padding: map-get($spacing-scale, 3);
+    @include theme-aware(
+      'border-top',
+      '1px solid #{map-get($colors, border)}',
+      '1px solid #{rgba(map-get($colors, border), 0.2)}'
+    );
+    display: flex;
+    justify-content: flex-end;
+    gap: map-get($spacing-scale, 2);
+    flex-wrap: wrap;
+  }
+
+  // Enhanced open state animation
+  &--open {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+    transition-timing-function: map-get(map-get($transitions, timing), ease-out);
+
+    .modal-overlay {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  // Enhanced closed state animation
+  &--closed {
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -60%) scale(0.95);
+    transition-timing-function: map-get(map-get($transitions, timing), ease-in);
+
+    .modal-overlay {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  // High contrast mode enhancements
+  @include high-contrast {
+    border: 2px solid map-get($colors, primary);
+    
+    .modal-header,
+    .modal-footer {
+      border-color: currentColor;
+    }
+  }
+
+  // Reduced motion preferences
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    
+    .modal-overlay {
+      transition: none;
+    }
+  }
+}
