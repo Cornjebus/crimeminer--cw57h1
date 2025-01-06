@@ -1,0 +1,110 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+// Main content container
+.main-content {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  will-change: background-color;
+  
+  @include theme-aware(
+    'background-color',
+    map.get($colors, background, light),
+    map.get($colors, background, dark)
+  );
+  
+  @include transition(background-color);
+  @include scrollbar;
+  
+  -webkit-overflow-scrolling: touch;
+}
+
+// Inner content wrapper with responsive padding
+.main-content__inner {
+  max-width: map.get($grid, max-width);
+  margin: 0 auto;
+  padding: map.get($spacing-scale, 4);
+
+  @include respond-to('tablet') {
+    padding: map.get($spacing-scale, 5);
+  }
+
+  @include respond-to('desktop') {
+    padding: map.get($spacing-scale, 6);
+  }
+}
+
+// Content sections with responsive margins
+.main-content__section {
+  margin-bottom: map.get($spacing-scale, 4);
+
+  @include respond-to('tablet') {
+    margin-bottom: map.get($spacing-scale, 5);
+  }
+
+  @include respond-to('desktop') {
+    margin-bottom: map.get($spacing-scale, 6);
+  }
+
+  // Last section should not have margin
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Loading state styles
+.main-content--loading {
+  @include flex-center;
+  min-height: 400px;
+  
+  @include theme-aware(
+    'background-color',
+    lighten(map.get($colors, background, light), 2%),
+    darken(map.get($colors, background, dark), 2%)
+  );
+  
+  @include transition(background-color);
+}
+
+// High contrast mode adjustments
+@include high-contrast {
+  .main-content {
+    border: 1px solid map.get($colors, border);
+  }
+}
+
+// Responsive adjustments for different screen sizes
+@include respond-to('mobile') {
+  .main-content {
+    -ms-overflow-style: -ms-autohiding-scrollbar; // Better scrolling on IE/Edge
+  }
+}
+
+@include respond-to('tablet') {
+  .main-content {
+    overflow-y: overlay; // Better scrollbar behavior on desktop
+  }
+}
+
+@include respond-to('large') {
+  .main-content__inner {
+    padding: map.get($spacing-scale, 6) map.get($spacing-scale, 7);
+  }
+}
+
+// Print styles
+@media print {
+  .main-content {
+    overflow: visible;
+    background: white !important;
+  }
+
+  .main-content__inner {
+    max-width: none;
+    padding: 0;
+  }
+}
