@@ -1,0 +1,185 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Root container for cases page
+.cases-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: map-get($spacing-scale, 4);
+  min-height: 100vh;
+  overflow-x: hidden;
+  
+  @include theme-aware('background', map-get(map-get($colors, background), light), map-get(map-get($colors, background), dark));
+  @include theme-aware('color', map-get(map-get($colors, text), light), map-get(map-get($colors, text), dark));
+  
+  @include respond-to(mobile) {
+    padding: map-get($spacing-scale, 2);
+  }
+
+  @media print {
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+// Header section with search and filters
+.cases-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: map-get($spacing-scale, 4);
+  flex-wrap: wrap;
+  gap: map-get($spacing-scale, 2);
+  
+  @include respond-to(mobile) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    flex: 1;
+    min-width: 280px;
+    
+    input {
+      @include theme-aware('background', map-get(map-get($colors, background), light), map-get(map-get($colors, background), dark));
+      @include theme-aware('border-color', map-get($colors, border), darken(map-get($colors, border), 20%));
+      
+      &:focus {
+        @include focus-ring('primary');
+      }
+    }
+  }
+}
+
+// Main content area with case list and details
+.cases-content {
+  display: grid;
+  gap: map-get($spacing-scale, 4);
+  height: calc(100vh - 200px);
+  overflow: hidden;
+  
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  
+  @include respond-to(tablet) {
+    grid-template-columns: 40% 60%;
+  }
+  
+  @include respond-to(desktop) {
+    grid-template-columns: 350px 1fr;
+  }
+
+  // Case list section
+  .case-list {
+    overflow-y: auto;
+    @include scrollbar;
+    
+    @include theme-aware('background', lighten(map-get(map-get($colors, background), light), 2%), darken(map-get(map-get($colors, background), dark), 2%));
+    border-radius: 8px;
+    border: 1px solid;
+    @include theme-aware('border-color', map-get($colors, border), darken(map-get($colors, border), 20%));
+    
+    @include high-contrast {
+      border: 2px solid map-get(map-get($colors, text), dark);
+    }
+  }
+
+  // Case details section
+  .case-details {
+    overflow-y: auto;
+    @include scrollbar;
+    
+    @include theme-aware('background', lighten(map-get(map-get($colors, background), light), 2%), darken(map-get(map-get($colors, background), dark), 2%));
+    border-radius: 8px;
+    border: 1px solid;
+    @include theme-aware('border-color', map-get($colors, border), darken(map-get($colors, border), 20%));
+    
+    @include high-contrast {
+      border: 2px solid map-get(map-get($colors, text), dark);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+    }
+  }
+
+  @media print {
+    display: block;
+    height: auto;
+    overflow: visible;
+    
+    .case-list {
+      display: none;
+    }
+  }
+}
+
+// Footer section with pagination and actions
+.cases-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: map-get($spacing-scale, 4);
+  flex-wrap: wrap;
+  gap: map-get($spacing-scale, 2);
+  
+  @include respond-to(mobile) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination {
+    @include theme-aware('background', map-get(map-get($colors, background), light), map-get(map-get($colors, background), dark));
+    
+    button {
+      @include clickable;
+      
+      &:focus {
+        @include focus-ring('primary');
+      }
+      
+      &[aria-current="page"] {
+        @include theme-aware('background', map-get($colors, primary), lighten(map-get($colors, primary), 10%));
+        color: white;
+      }
+    }
+  }
+
+  @media print {
+    display: none;
+  }
+}
+
+// Accessibility enhancements
+@media (prefers-contrast: more) {
+  .cases-page {
+    * {
+      border-color: #000000;
+    }
+  }
+  
+  [role="button"],
+  button {
+    &:focus {
+      outline: 2px solid #000000;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Screen reader only elements
+.sr-only {
+  @include screen-reader-only;
+}
+
+// Focus visible polyfill support
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
