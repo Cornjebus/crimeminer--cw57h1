@@ -1,0 +1,208 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+// Global sidebar variables
+$sidebar-width: 280px;
+$sidebar-collapsed-width: 64px;
+$sidebar-transition-duration: 0.3s;
+$sidebar-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+
+// Root sidebar container
+.sidebar {
+  position: fixed;
+  top: 64px; // Header height
+  left: 0;
+  height: calc(100vh - 64px);
+  width: $sidebar-width;
+  transition: all $sidebar-transition-duration $sidebar-transition-timing;
+  will-change: transform, width;
+  contain: layout size;
+  @include theme-aware('background-color', 
+    map-get($colors, 'background', 'light'),
+    map-get($colors, 'background', 'dark')
+  );
+  @include elevation(2);
+
+  // RTL support
+  @include rtl {
+    left: auto;
+    right: 0;
+  }
+}
+
+// Scrollable content container
+.sidebar__content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: map-get($spacing-scale, 4);
+  overflow-y: auto;
+  overflow-x: hidden;
+  
+  // Custom scrollbar styling
+  @include scrollbar;
+  scrollbar-width: thin;
+  @include theme-aware('scrollbar-color',
+    'rgba(0, 0, 0, 0.3) transparent',
+    'rgba(255, 255, 255, 0.3) transparent'
+  );
+}
+
+// Section containers
+.sidebar__section {
+  margin-bottom: map-get($spacing-scale, 4);
+  @include theme-aware('border-bottom',
+    '1px solid #{map-get($colors, "border")}',
+    '1px solid rgba(255, 255, 255, 0.1)'
+  );
+
+  &:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+// Section headers
+.sidebar__section-title {
+  font-family: map-get(map-get($typography, 'font-family'), 'primary');
+  font-size: map-get(map-get($typography, 'font-size'), 'sm');
+  font-weight: map-get(map-get($typography, 'font-weight'), 'medium');
+  margin-bottom: map-get($spacing-scale, 2);
+  @include theme-aware('color',
+    map-get($colors, 'text', 'light'),
+    map-get($colors, 'text', 'dark')
+  );
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+// Interactive menu items
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  padding: map-get($spacing-scale, 2);
+  border-radius: 4px;
+  @include clickable;
+  transition: background-color $sidebar-transition-duration $sidebar-transition-timing;
+
+  @include hover-effect {
+    @include theme-aware('background-color',
+      'rgba(0, 0, 0, 0.05)',
+      'rgba(255, 255, 255, 0.05)'
+    );
+  }
+
+  &:focus-visible {
+    @include focus-ring('primary');
+  }
+
+  // Active state
+  &--active {
+    @include theme-aware('background-color',
+      'rgba(26, 115, 232, 0.1)',
+      'rgba(26, 115, 232, 0.2)'
+    );
+    @include theme-aware('color',
+      map-get($colors, 'primary'),
+      lighten(map-get($colors, 'primary'), 10%)
+    );
+  }
+}
+
+// Mobile styles
+@include respond-to('mobile') {
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: map-get($z-index, 'overlay');
+    @include elevation(4);
+
+    @include rtl {
+      transform: translateX(100%);
+    }
+
+    // Open state
+    &--open {
+      transform: translateX(0);
+
+      &::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: -1;
+      }
+    }
+  }
+}
+
+// Tablet styles
+@include respond-to('tablet') {
+  .sidebar {
+    width: $sidebar-collapsed-width;
+
+    .sidebar__content {
+      padding: map-get($spacing-scale, 2);
+    }
+
+    // Text elements
+    .sidebar__section-title,
+    .sidebar__item-text {
+      display: none;
+    }
+
+    // Expanded state
+    &--expanded {
+      width: $sidebar-width;
+
+      .sidebar__content {
+        padding: map-get($spacing-scale, 4);
+      }
+
+      .sidebar__section-title,
+      .sidebar__item-text {
+        display: block;
+      }
+    }
+  }
+}
+
+// Desktop styles
+@include respond-to('desktop') {
+  .sidebar {
+    transform: none;
+
+    &::before {
+      display: none;
+    }
+  }
+}
+
+// High contrast mode support
+@include high-contrast {
+  .sidebar {
+    border-right: 2px solid currentColor;
+    box-shadow: none;
+  }
+
+  .sidebar__item {
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: -2px;
+    }
+
+    &--active {
+      border: 2px solid currentColor;
+    }
+  }
+}
+
+// Reduced motion preferences
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar__item {
+    transition: none;
+  }
+}
