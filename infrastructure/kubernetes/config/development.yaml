@@ -1,0 +1,170 @@
+# Kubernetes Development Environment Configuration for CrimeMiner Platform
+# Version: 1.27+
+# Implements FedRAMP High and CJIS compliance requirements for development environment
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: crimeminer-dev-quota
+  namespace: crimeminer-system
+  labels:
+    environment: development
+    compliance-level: fedramp-high
+spec:
+  hard:
+    cpu: "16"
+    memory: "32Gi"
+    pods: "20"
+    persistentvolumeclaims: "10"
+    services: "10"
+    secrets: "50"
+    configmaps: "30"
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: crimeminer-dev-limits
+  namespace: crimeminer-system
+  labels:
+    environment: development
+    compliance-level: fedramp-high
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      maxLimitRequestRatio:
+        cpu: "5"
+        memory: "4"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crimeminer-dev-config
+  namespace: crimeminer-system
+  labels:
+    environment: development
+    compliance-level: fedramp-high
+data:
+  ENVIRONMENT: "development"
+  LOG_LEVEL: "debug"
+  COMPLIANCE_LEVEL: "fedramp-high"
+  RETENTION_PERIOD: "7d"
+  MONITORING_ENABLED: "true"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: crimeminer-system
+  labels:
+    app: api-gateway
+    environment: development
+    compliance-level: fedramp-high
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+      containers:
+        - name: api-gateway
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: crimeminer-dev-monitoring
+  namespace: crimeminer-system
+  labels:
+    environment: development
+    compliance-level: fedramp-high
+spec:
+  groups:
+    - name: development.rules
+      rules:
+        - alert: HighCPUUsage
+          expr: container_cpu_usage_seconds_total > 80
+          for: 5m
+          labels:
+            severity: warning
+            environment: development
+          annotations:
+            description: "Container CPU usage above 80% threshold"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: crimeminer-dev-network-policy
+  namespace: crimeminer-system
+  labels:
+    environment: development
+    compliance-level: fedramp-high
+spec:
+  podSelector:
+    matchLabels:
+      app: api-gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              compliance-level: fedramp-high
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              compliance-level: fedramp-high
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crimeminer-compliance-settings
+  namespace: crimeminer-system
+  labels:
+    environment: development
+    compliance-level: fedramp-high
+data:
+  fedramp:
+    enabled: "true"
+    level: "high"
+    audit-logging: "enabled"
+    encryption: "enabled"
+  cjis:
+    enabled: "true"
+    audit-logging: "enabled"
+    authentication: "mfa"
+  security-controls:
+    network-isolation: "strict"
+    data-encryption: "required"
+    access-control: "rbac-and-abac"
+    monitoring: "continuous"
