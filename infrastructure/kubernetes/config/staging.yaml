@@ -1,0 +1,231 @@
+# Kubernetes v1.27+
+# Staging environment configuration for CrimeMiner platform
+# Implements FedRAMP High and CJIS security controls with 10% production capacity
+
+---
+# Resource Quotas for Staging Environment
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: staging-quota
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+spec:
+  hard:
+    cpu: "3"
+    memory: "6Gi"
+    pods: "10"
+    services: "5"
+    persistentvolumeclaims: "2"
+    requests.nvidia.com/gpu: "1"
+
+---
+# Horizontal Pod Autoscaler Configuration
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: staging-hpa
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+spec:
+  minReplicas: 1
+  maxReplicas: 3
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+    scaleUp:
+      stabilizationWindowSeconds: 60
+
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: staging-pdb
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+spec:
+  minAvailable: 50%
+  selector:
+    matchLabels:
+      environment: staging
+
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: staging-network-policy
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          environment: staging
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          environment: staging
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 53
+
+---
+# Service Mesh Configuration Override
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: staging-istio-config
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+spec:
+  profile: default
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+    ingressGateways:
+    - name: istio-ingressgateway
+      enabled: true
+      k8s:
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+  values:
+    global:
+      mtls:
+        enabled: true
+        mode: STRICT
+      proxy:
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+    security:
+      peerAuthentication:
+        mode: STRICT
+    telemetry:
+      enabled: true
+      v2:
+        enabled: true
+        prometheus:
+          enabled: true
+          configOverride:
+            scrape_interval: "30s"
+            evaluation_interval: "30s"
+            retention: "30d"
+
+---
+# Monitoring Configuration
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: staging-monitoring-rules
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+spec:
+  groups:
+  - name: staging.rules
+    rules:
+    - alert: HighCPUUsage
+      expr: container_cpu_usage_seconds_total{environment="staging"} > 80
+      for: 5m
+      labels:
+        severity: warning
+        environment: staging
+      annotations:
+        description: "High CPU usage detected in staging environment"
+    - alert: HighMemoryUsage
+      expr: container_memory_usage_bytes{environment="staging"} > 85
+      for: 5m
+      labels:
+        severity: warning
+        environment: staging
+      annotations:
+        description: "High memory usage detected in staging environment"
+
+---
+# Logging Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: staging-logging-config
+  namespace: crimeminer-system
+  labels:
+    environment: staging
+    compliance-level: fedramp-high
+data:
+  fluentd.conf: |
+    <match **>
+      @type elasticsearch
+      host elasticsearch-logging
+      port 9200
+      logstash_format true
+      flush_interval 30s
+      num_threads 2
+      buffer_chunk_limit 2M
+      buffer_queue_limit 32
+      retry_max_interval 30
+      retry_forever false
+      disable_retry_limit false
+      max_retry_wait 300s
+      <buffer>
+        @type file
+        path /var/log/fluentd-buffers/staging
+        flush_mode interval
+        retry_type exponential_backoff
+        flush_interval 30s
+        flush_at_shutdown true
+        retry_forever false
+        retry_max_interval 30
+        chunk_limit_size 2M
+        queue_limit_length 32
+      </buffer>
+    </match>
