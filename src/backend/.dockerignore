@@ -1,0 +1,125 @@
+node_modules/
+.npm/
+.yarn/
+yarn-error.log
+npm-debug.log*
+package-lock.json
+yarn.lock
+
+# Security-sensitive files
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+.env*
+secrets/
+*credentials*
+*password*
+*secret*
+*token*
+*auth*config*
+
+# Build and compilation artifacts
+dist/
+build/
+*.js.map
+*.d.ts
+tsconfig.tsbuildinfo
+
+# Test and coverage files
+tests/
+__tests__/
+*.test.ts
+*.spec.ts
+coverage/
+.nyc_output/
+test-results/
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.github/
+
+# Temporary and cache files
+tmp/
+temp/
+.temp/
+*.tmp
+*.temp
+.cache/
+*.log
+
+# Compressed files
+*.tar
+*.gz
+*.zip
+*.rar
+*.7z
+*.bz2
+
+# Development and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Documentation and non-production files
+docs/
+*.md
+LICENSE
+CHANGELOG
+AUTHORS
+CONTRIBUTORS
+*.example
+*.sample
+
+# Debug files
+*.debug
+debug/
+.debug/
+
+# Monitoring and profiling
+*.heapsnapshot
+*.cpuprofile
+.clinic/
+
+# Container and deployment files
+Dockerfile*
+docker-compose*
+.dockerignore
+kubernetes/
+helm/
+*.yaml
+*.yml
+
+# Linting and formatting
+.eslintrc*
+.prettierrc*
+.editorconfig
+.stylelintrc*
+
+# Backup files
+*~
+*.bak
+*.backup
+*.old
+
+# Local development overrides
+*.override.*
+*.local.*
+
+# Dependency scanning and auditing
+.snyk
+.dependency-cruiser.js
+.nsprc
+
+# Miscellaneous
+.env.example
+README*
+CONTRIBUTING*
+*.todo
+*.draft
