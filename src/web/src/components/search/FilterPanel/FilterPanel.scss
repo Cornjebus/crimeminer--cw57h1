@@ -1,0 +1,179 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+// Main filter panel container
+.filter-panel {
+  @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+  @include elevation(2);
+  
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing-scale, 4);
+  padding: map-get($spacing-scale, 4);
+  border-radius: 8px;
+  width: 100%;
+  
+  // Accessibility
+  &[role="region"] {
+    @include focus-ring('primary');
+  }
+
+  // Mobile layout
+  @include respond-to('mobile') {
+    padding: map-get($spacing-scale, 3);
+    gap: map-get($spacing-scale, 3);
+  }
+
+  // Tablet and above
+  @include respond-to('tablet') {
+    max-width: 320px;
+  }
+
+  // Desktop and above
+  @include respond-to('desktop') {
+    max-width: 380px;
+  }
+}
+
+// Filter section container
+.filter-section {
+  @include theme-aware('background-color', rgba(map-get($colors, background, light), 0.8), rgba(map-get($colors, background, dark), 0.8));
+  @include theme-aware('border-color', map-get($colors, border), darken(map-get($colors, border), 20%));
+  
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  padding: map-get($spacing-scale, 3);
+  margin-bottom: map-get($spacing-scale, 3);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  // High contrast mode
+  @include high-contrast {
+    border-width: 2px;
+  }
+}
+
+// Section header
+.filter-header {
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+  
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-size: map-get(map-get($typography, font-size), md);
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  margin-bottom: map-get($spacing-scale, 2);
+  
+  // Screen reader optimization
+  &[aria-expanded] {
+    cursor: pointer;
+    padding: map-get($spacing-scale, 2);
+    
+    &:focus {
+      @include focus-ring('primary');
+    }
+  }
+}
+
+// Filter content area
+.filter-content {
+  display: flex;
+  flex-direction: column;
+  gap: map-get($spacing-scale, 2);
+
+  // Reduced motion
+  @include reduced-motion {
+    transition: none;
+  }
+}
+
+// Date range picker
+.date-range {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: map-get($spacing-scale, 2);
+  
+  @include respond-to('tablet') {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  input[type="date"] {
+    @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+    @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+    
+    padding: map-get($spacing-scale, 2);
+    border: 1px solid map-get($colors, border);
+    border-radius: 4px;
+    width: 100%;
+
+    &:focus {
+      @include focus-ring('primary');
+    }
+  }
+}
+
+// Media type filters
+.media-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: map-get($spacing-scale, 2);
+
+  .media-type-option {
+    @include clickable;
+    @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+    
+    padding: map-get($spacing-scale, 2) map-get($spacing-scale, 3);
+    border: 1px solid map-get($colors, border);
+    border-radius: 4px;
+
+    &.selected {
+      @include theme-aware('background-color', map-get($colors, primary), darken(map-get($colors, primary), 10%));
+      @include theme-aware('color', #FFFFFF, #FFFFFF);
+    }
+
+    &:focus {
+      @include focus-ring('primary');
+    }
+  }
+}
+
+// Entity type filters
+.entity-types {
+  .entity-type-group {
+    margin-bottom: map-get($spacing-scale, 3);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .entity-type-label {
+      @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+      font-weight: map-get(map-get($typography, font-weight), medium);
+      margin-bottom: map-get($spacing-scale, 2);
+    }
+  }
+}
+
+// Case selection
+.case-select {
+  select {
+    @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+    @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+    
+    width: 100%;
+    padding: map-get($spacing-scale, 2);
+    border: 1px solid map-get($colors, border);
+    border-radius: 4px;
+    
+    &:focus {
+      @include focus-ring('primary');
+    }
+
+    option {
+      @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+      @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+      padding: map-get($spacing-scale, 1);
+    }
+  }
+}
