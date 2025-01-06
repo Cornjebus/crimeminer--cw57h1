@@ -1,0 +1,339 @@
+---
+# Monitoring stack base configuration for CrimeMiner platform
+# Implements FedRAMP High and CJIS compliant observability infrastructure
+# Version: 1.0.0
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    compliance: fedramp-high
+    security: cjis
+    
+---
+# Prometheus StatefulSet Configuration
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+    component: server
+spec:
+  serviceName: prometheus
+  replicas: 3
+  selector:
+    matchLabels:
+      app: prometheus
+      component: server
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        component: server
+    spec:
+      securityContext:
+        fsGroup: 65534
+        runAsUser: 65534
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: prometheus
+        image: prometheus/prometheus:v2.44.0
+        args:
+          - "--config.file=/etc/prometheus/prometheus.yml"
+          - "--storage.tsdb.path=/prometheus"
+          - "--storage.tsdb.retention.time=7y"
+          - "--web.enable-lifecycle"
+          - "--web.enable-admin-api=false"
+          - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+          - "--web.console.templates=/usr/share/prometheus/consoles"
+        resources:
+          requests:
+            cpu: "4"
+            memory: "16Gi"
+          limits:
+            cpu: "8"
+            memory: "32Gi"
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage
+          mountPath: /prometheus
+  volumeClaimTemplates:
+  - metadata:
+      name: prometheus-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gp3-encrypted
+      resources:
+        requests:
+          storage: 1000Gi
+
+---
+# Grafana Deployment Configuration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: grafana
+        image: grafana/grafana:9.5.3
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+        env:
+        - name: GF_AUTH_DISABLE_LOGIN_FORM
+          value: "true"
+        - name: GF_AUTH_OAUTH_AUTO_LOGIN
+          value: "true"
+        - name: GF_SECURITY_ALLOW_EMBEDDING
+          value: "false"
+        - name: GF_SECURITY_COOKIE_SECURE
+          value: "true"
+        - name: GF_SECURITY_DISABLE_GRAVATAR
+          value: "true"
+        - name: GF_SECURITY_STRICT_TRANSPORT_SECURITY
+          value: "true"
+        - name: GF_SECURITY_CONTENT_SECURITY_POLICY
+          value: "true"
+        - name: GF_SECURITY_X_CONTENT_TYPE_OPTIONS
+          value: "true"
+        - name: GF_SECURITY_X_XSS_PROTECTION
+          value: "true"
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+        - name: grafana-config
+          mountPath: /etc/grafana
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-storage
+      - name: grafana-config
+        configMap:
+          name: grafana-config
+
+---
+# Loki StatefulSet Configuration
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: loki
+  namespace: monitoring
+  labels:
+    app: loki
+spec:
+  serviceName: loki
+  replicas: 3
+  selector:
+    matchLabels:
+      app: loki
+  template:
+    metadata:
+      labels:
+        app: loki
+    spec:
+      securityContext:
+        fsGroup: 10001
+        runAsUser: 10001
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: loki
+        image: grafana/loki:2.8.0
+        args:
+        - "-config.file=/etc/loki/config.yml"
+        resources:
+          requests:
+            cpu: "4"
+            memory: "16Gi"
+          limits:
+            cpu: "8"
+            memory: "32Gi"
+        volumeMounts:
+        - name: loki-config
+          mountPath: /etc/loki
+        - name: loki-storage
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: loki-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: gp3-encrypted
+      resources:
+        requests:
+          storage: 2000Gi
+
+---
+# ConfigMap for Prometheus configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 30s
+      external_labels:
+        environment: production
+        compliance: fedramp-high
+    
+    remote_write:
+      queue_config:
+        capacity: 1000000
+        max_samples_per_send: 200000
+        batch_send_deadline: 5s
+      
+    storage:
+      tsdb:
+        retention: 7y
+        out_of_order_time_window: 30m
+    
+    tls_config:
+      min_version: TLS13
+      cipher_suites:
+      - TLS_AES_128_GCM_SHA256
+      - TLS_AES_256_GCM_SHA384
+      - TLS_CHACHA20_POLY1305_SHA256
+
+---
+# ConfigMap for Grafana configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-config
+  namespace: monitoring
+data:
+  grafana.ini: |
+    [auth]
+    disable_login_form = true
+    oauth_auto_login = true
+    oauth_allow_insecure_email_lookup = false
+    
+    [security]
+    allow_embedding = false
+    cookie_secure = true
+    disable_gravatar = true
+    strict_transport_security = true
+    content_security_policy = true
+    x_content_type_options = true
+    x_xss_protection = true
+    
+    [dashboards]
+    default_home_dashboard_path = /etc/grafana/dashboards/services.json
+    versions_to_keep = 90
+    min_refresh_interval = 1m
+
+---
+# ConfigMap for Loki configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: monitoring
+data:
+  config.yml: |
+    auth_enabled: true
+    
+    chunk_store_config:
+      max_look_back_period: 7y
+    
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 7y
+    
+    compactor:
+      retention_enabled: true
+      retention_delete_delay: 24h
+      retention_delete_worker_count: 150
+    
+    limits_config:
+      enforce_metric_name: true
+      reject_old_samples: true
+      reject_old_samples_max_age: 7y
+      max_global_streams_per_user: 1000000
+
+---
+# Services for monitoring components
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+    name: http
+  selector:
+    app: prometheus
+    component: server
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  selector:
+    app: grafana
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  ports:
+  - port: 3100
+    targetPort: 3100
+    name: http
+  selector:
+    app: loki
+  type: ClusterIP
