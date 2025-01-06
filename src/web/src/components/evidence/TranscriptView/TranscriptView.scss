@@ -1,0 +1,186 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+.transcript-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  padding: map-get($spacing-scale, 3);
+  position: relative;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+
+  @include theme-aware(
+    'scrollbar-color',
+    map-get(map-get($colors, scrollbar), light),
+    map-get(map-get($colors, scrollbar), dark)
+  );
+
+  @media (prefers-reduced-motion) {
+    scroll-behavior: auto;
+  }
+
+  @media print {
+    overflow: visible;
+    height: auto;
+  }
+
+  @include respond-to(mobile) {
+    padding: map-get($spacing-scale, 2);
+  }
+}
+
+.transcript-line {
+  display: grid;
+  grid-template-columns: minmax(120px, auto) 1fr auto;
+  gap: map-get($spacing-scale, 2);
+  margin-bottom: map-get($spacing-scale, 2);
+  padding: map-get($spacing-scale, 2);
+  border-radius: 4px;
+  
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+
+  transition: background-color 0.2s ease;
+
+  @media (prefers-reduced-motion) {
+    transition: none;
+  }
+
+  &:focus-within {
+    @include focus-ring;
+  }
+
+  &[data-highlighted="true"] {
+    @include theme-aware(
+      'background-color',
+      rgba(map-get($colors, warning), 0.2),
+      rgba(map-get($colors, warning), 0.15)
+    );
+  }
+
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+    gap: map-get($spacing-scale, 1);
+  }
+
+  @include respond-to(tablet) {
+    grid-template-columns: minmax(100px, auto) 1fr auto;
+    gap: map-get($spacing-scale, 2);
+  }
+}
+
+.speaker-info {
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  
+  @include theme-aware(
+    'color',
+    map-get(map-get($colors, primary), light),
+    map-get(map-get($colors, primary), dark)
+  );
+
+  @include high-contrast {
+    color: currentColor;
+    border-bottom: 1px solid currentColor;
+  }
+
+  &[data-speaker-type="unknown"] {
+    font-style: italic;
+  }
+
+  &[data-confidence-low="true"] {
+    opacity: 0.8;
+  }
+}
+
+.timestamp {
+  font-family: map-get(map-get($typography, font-family), monospace);
+  
+  @include theme-aware(
+    'color',
+    map-get(map-get($colors, text), light),
+    map-get(map-get($colors, text), dark)
+  );
+
+  font-size: map-get(map-get($typography, font-size), sm);
+  white-space: nowrap;
+  user-select: all;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  @include focus-ring {
+    outline-offset: 2px;
+  }
+}
+
+.transcript-content {
+  font-size: map-get(map-get($typography, font-size), md);
+  line-height: map-get(map-get($typography, line-height), relaxed);
+  
+  @include theme-aware(
+    'color',
+    map-get(map-get($colors, text), light),
+    map-get(map-get($colors, text), dark)
+  );
+
+  word-break: break-word;
+  hyphens: auto;
+
+  @media (prefers-color-scheme: dark) {
+    font-weight: 300;
+  }
+
+  @include rtl-aware {
+    text-align: right;
+    direction: rtl;
+  }
+}
+
+// High Contrast Mode Overrides
+@include high-contrast {
+  .transcript-container {
+    scrollbar-color: ButtonText Canvas;
+  }
+
+  .transcript-line {
+    border: 1px solid CanvasText;
+    background-color: Canvas;
+
+    &[data-highlighted="true"] {
+      background-color: Mark;
+    }
+  }
+
+  .speaker-info {
+    color: Highlight;
+  }
+
+  .timestamp,
+  .transcript-content {
+    color: CanvasText;
+  }
+}
+
+// Print Styles
+@media print {
+  .transcript-line {
+    break-inside: avoid;
+    border: 1px solid #000;
+  }
+
+  .timestamp {
+    color: #000 !important;
+  }
+
+  .speaker-info,
+  .transcript-content {
+    color: #000 !important;
+  }
+}
