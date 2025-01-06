@@ -1,0 +1,186 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+// Root container
+.case-list {
+  padding: map-get($spacing-scale, 4);
+  container-type: inline-size;
+  min-height: 400px;
+  border-radius: 8px;
+  
+  @include theme-aware(
+    'background',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+  
+  @include respond-to(mobile) {
+    padding: map-get($spacing-scale, 2);
+  }
+}
+
+// Header section
+.case-list__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-block-end: map-get($spacing-scale, 4);
+  gap: map-get($spacing-scale, 2);
+  
+  @include respond-to(mobile) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+// Title styling
+.case-list__title {
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-size: clamp(
+    map-get(map-get($typography, font-size), lg),
+    2vw,
+    map-get(map-get($typography, font-size), 2xl)
+  );
+  font-weight: map-get(map-get($typography, font-weight), bold);
+  margin: 0;
+  
+  @include theme-aware(
+    'color',
+    map-get(map-get($colors, text), light),
+    map-get(map-get($colors, text), dark)
+  );
+}
+
+// Grid container
+.case-list__grid {
+  display: grid;
+  gap: clamp(
+    map-get($spacing-scale, 2),
+    2vw,
+    map-get($spacing-scale, 4)
+  );
+  container-type: inline-size;
+  
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+  }
+  
+  @include respond-to(tablet) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include respond-to(desktop) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @include respond-to(large) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// Case item card
+.case-list__item {
+  position: relative;
+  padding: map-get($spacing-scale, 3);
+  border-radius: 4px;
+  min-block-size: 44px; // WCAG touch target size
+  min-inline-size: 44px; // WCAG touch target size
+  cursor: pointer;
+  
+  @include theme-aware(
+    'border',
+    1px solid map-get($colors, border),
+    1px solid rgba(map-get($colors, border), 0.2)
+  );
+  
+  @include transition(transform);
+  
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover {
+      transform: translateY(-2px);
+      @include elevation(2);
+    }
+  }
+  
+  &:focus-visible {
+    @include focus-ring;
+  }
+  
+  @include high-contrast {
+    border-width: 2px;
+  }
+}
+
+// Status indicator
+.case-list__status {
+  display: inline-flex;
+  align-items: center;
+  padding: map-get($spacing-scale, 1) map-get($spacing-scale, 2);
+  border-radius: 4px;
+  font-size: map-get(map-get($typography, font-size), sm);
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  line-height: map-get(map-get($typography, line-height), normal);
+  
+  @include truncate-text;
+  
+  &--active {
+    background-color: rgba(map-get($colors, secondary), 0.1);
+    color: map-get($colors, secondary);
+  }
+  
+  &--pending {
+    background-color: rgba(map-get($colors, warning), 0.1);
+    color: map-get($colors, warning);
+  }
+  
+  &--closed {
+    background-color: rgba(map-get($colors, text, light), 0.1);
+    
+    @include theme-aware(
+      'color',
+      map-get(map-get($colors, text), light),
+      map-get(map-get($colors, text), dark)
+    );
+  }
+}
+
+// Case metadata
+.case-list__metadata {
+  margin-block-start: map-get($spacing-scale, 2);
+  font-size: map-get(map-get($typography, font-size), sm);
+  
+  @include theme-aware(
+    'color',
+    rgba(map-get(map-get($colors, text), light), 0.8),
+    rgba(map-get(map-get($colors, text), dark), 0.8)
+  );
+}
+
+// Print styles
+@media print {
+  .case-list {
+    background: none !important;
+    padding: 0;
+  }
+  
+  .case-list__item {
+    break-inside: avoid;
+    border: 1px solid #000 !important;
+  }
+  
+  .case-list__status {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+// Reduced motion
+@media (prefers-reduced-motion: reduce) {
+  .case-list__item {
+    transition: none;
+    
+    &:hover {
+      transform: none;
+    }
+  }
+}
