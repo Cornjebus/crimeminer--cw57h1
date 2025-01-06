@@ -1,0 +1,92 @@
+# Prometheus Recording Rules Configuration v2.44.0
+# Purpose: Defines comprehensive metrics aggregations, SLIs, and performance metrics
+# with enhanced security compliance monitoring for the CrimeMiner platform
+
+groups:
+  # Service Health and Availability Metrics
+  - name: service_health_rules
+    interval: 30s
+    rules:
+      # Service Uptime Ratio
+      - record: service:up:ratio
+        expr: |
+          sum(up{job=~".*-service"}) by (service) / 
+          count(up{job=~".*-service"}) by (service)
+        labels:
+          type: availability
+          slo_category: uptime
+
+      # Error Rate by Service
+      - record: service:request_errors:ratio
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) by (service) /
+          sum(rate(http_requests_total[5m])) by (service)
+        labels:
+          type: errors
+          slo_category: reliability
+
+  # Resource Utilization Metrics
+  - name: resource_utilization_rules
+    interval: 30s
+    rules:
+      # CPU Usage Ratio
+      - record: service:cpu:usage
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (service) /
+          sum(container_spec_cpu_quota{container!=""}) by (service)
+        labels:
+          type: resource
+          resource: cpu
+
+      # Memory Usage Ratio
+      - record: service:memory:usage
+        expr: |
+          sum(container_memory_working_set_bytes{container!=""}) by (service) /
+          sum(container_spec_memory_limit_bytes{container!=""}) by (service)
+        labels:
+          type: resource
+          resource: memory
+
+  # Performance and Processing Metrics
+  - name: performance_rules
+    interval: 30s
+    rules:
+      # Evidence Processing Rate
+      - record: evidence:processing:rate
+        expr: |
+          sum(rate(evidence_items_processed_total[5m])) by (service, evidence_type)
+        labels:
+          type: performance
+          metric: throughput
+
+      # ML Model Inference Latency (95th percentile)
+      - record: ml:inference:latency
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(ml_model_inference_duration_seconds_bucket[5m])) 
+            by (le, model, service))
+        labels:
+          type: performance
+          metric: latency
+
+  # Security and Compliance Metrics
+  - name: security_rules
+    interval: 30s
+    rules:
+      # Authentication Failures
+      - record: security:auth:failures
+        expr: |
+          sum(increase(auth_failures_total[5m])) 
+          by (service, auth_type, failure_reason)
+        labels:
+          type: security
+          compliance: fedramp
+
+      # Audit Coverage Ratio
+      - record: compliance:audit:coverage
+        expr: |
+          sum(audit_events_total) by (service, operation_type) /
+          sum(total_auditable_operations) by (service, operation_type)
+        labels:
+          type: compliance
+          standard: cjis
