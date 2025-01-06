@@ -1,0 +1,135 @@
+---
+# Cert-manager deployment for FedRAMP High and CJIS compliant certificate management
+# Version: v1.12.3
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cert-manager
+  namespace: crimeminer-system
+  labels:
+    app: cert-manager
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/instance: cert-manager
+    app.kubernetes.io/version: v1.12.3
+    app.kubernetes.io/component: controller
+    compliance-level: fedramp-high
+    security-context: high-security
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.istio.io/tlsMode: strict
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: cert-manager
+  template:
+    metadata:
+      labels:
+        app: cert-manager
+        compliance-level: fedramp-high
+    spec:
+      serviceAccountName: cert-manager
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: cert-manager
+        image: quay.io/jetstack/cert-manager-controller:v1.12.3
+        imagePullPolicy: IfNotPresent
+        args:
+        - --v=2
+        - --cluster-resource-namespace=$(POD_NAMESPACE)
+        - --leader-election-namespace=crimeminer-system
+        - --min-tls-version=VersionTLS13
+        - --approved-cipher-suites=TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+          seccompProfile:
+            type: RuntimeDefault
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cert-manager
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: cert-manager-config
+---
+# FedRAMP High compliant Let's Encrypt production certificate issuer
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+          podTemplate:
+            spec:
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1001
+                fsGroup: 1001
+---
+# FedRAMP High and CJIS compliant cert-manager configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cert-manager-config
+  namespace: crimeminer-system
+  labels:
+    app: cert-manager
+    compliance-level: fedramp-high
+data:
+  config.yaml: |
+    minTLSVersion: TLSv1.3
+    enabledCipherSuites: TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256
+    renewBefore: 720h
+    maxDuration: 8760h
+    fedrampCompliance:
+      level: high
+      auditLogging: true
+      auditLevel: RequestResponse
+    hsm:
+      enabled: true
+      provider: aws-cloudhsm
+    cjisCompliance:
+      enabled: true
+      policyVersion: "5.9"
+    security:
+      podSecurityPolicies:
+        enabled: true
+      networkPolicies:
+        enabled: true
+      seccompProfiles:
+        enabled: true
+        type: RuntimeDefault
