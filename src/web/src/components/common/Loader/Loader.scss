@@ -1,0 +1,162 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Optimized spin animation with reduced motion support
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Reduced motion preference handling
+@media (prefers-reduced-motion: reduce) {
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+    animation-duration: 1.5s;
+  }
+}
+
+// Base loader container
+.loader {
+  @include flex-center;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  
+  // Accessibility attributes
+  &[role="progressbar"] {
+    aria-busy: true;
+    aria-live: polite;
+  }
+}
+
+// Spinner element with performance optimizations
+.loader__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  
+  @include theme-aware(
+    'border-top-color',
+    map.get($colors, primary),
+    map.get($colors, primary)
+  );
+  
+  // Performance optimizations
+  animation: spin 1s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+// Full-screen overlay
+.loader__overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: map.get($z-index, overlay);
+  backdrop-filter: blur(2px);
+  
+  @include theme-aware(
+    'background-color',
+    rgba(map.get($colors, background, light), 0.8),
+    rgba(map.get($colors, background, dark), 0.8)
+  );
+}
+
+// Loading text
+.loader__text {
+  margin-top: map.get($spacing-scale, 3);
+  font-size: map.get(map.get($typography, font-size), sm);
+  text-align: center;
+  font-weight: map.get(map.get($typography, font-weight), medium);
+  line-height: map.get(map.get($typography, line-height), normal);
+  max-width: 200px;
+  
+  @include theme-aware(
+    'color',
+    map.get($colors, text, light),
+    map.get($colors, text, dark)
+  );
+}
+
+// Size variants
+.loader--small {
+  .loader__spinner {
+    width: 24px;
+    height: 24px;
+    border-width: 2px;
+  }
+  
+  .loader__text {
+    font-size: map.get(map.get($typography, font-size), xs);
+    margin-top: map.get($spacing-scale, 2);
+  }
+}
+
+.loader--large {
+  .loader__spinner {
+    width: 64px;
+    height: 64px;
+    border-width: 4px;
+  }
+  
+  .loader__text {
+    font-size: map.get(map.get($typography, font-size), lg);
+    margin-top: map.get($spacing-scale, 4);
+  }
+}
+
+// High contrast mode support
+.loader--high-contrast {
+  .loader__spinner {
+    border-width: 4px;
+    
+    @include high-contrast {
+      @include theme-aware(
+        'border-top-color',
+        map.get($colors, error),
+        map.get($colors, warning)
+      );
+    }
+  }
+  
+  .loader__text {
+    font-weight: map.get(map.get($typography, font-weight), bold);
+    
+    @include high-contrast {
+      @include theme-aware(
+        'color',
+        map.get($colors, error),
+        map.get($colors, warning)
+      );
+    }
+  }
+}
+
+// Transition effects
+.loader {
+  @include transition(opacity);
+  
+  &--fade-enter {
+    opacity: 0;
+  }
+  
+  &--fade-enter-active,
+  &--fade-enter-done {
+    opacity: 1;
+  }
+  
+  &--fade-exit {
+    opacity: 1;
+  }
+  
+  &--fade-exit-active,
+  &--fade-exit-done {
+    opacity: 0;
+  }
+}
