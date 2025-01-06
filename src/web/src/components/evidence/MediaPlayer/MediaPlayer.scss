@@ -1,0 +1,160 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+.media-player {
+  position: relative;
+  width: 100%;
+  border-radius: map-get($spacing-scale, 2);
+  overflow: hidden;
+  @include theme-aware('background-color', map-get(map-get($colors, background), light), map-get(map-get($colors, background), dark));
+  @include transition(background-color);
+
+  // Respect reduced motion preferences
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  // RTL support
+  [dir='rtl'] & {
+    direction: rtl;
+  }
+}
+
+.media-player__video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-color: #000000;
+  
+  @include respond-to(mobile) {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+.media-player__controls {
+  display: flex;
+  align-items: center;
+  padding: map-get($spacing-scale, 3);
+  gap: map-get($spacing-scale, 2);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8),
+    rgba(0, 0, 0, 0)
+  );
+
+  @include respond-to(mobile) {
+    flex-direction: column;
+    padding: map-get($spacing-scale, 2);
+  }
+}
+
+.media-player__time {
+  font-family: map-get(map-get($typography, font-family), monospace);
+  font-size: map-get(map-get($typography, font-size), sm);
+  @include theme-aware('color', map-get(map-get($colors, text), light), map-get(map-get($colors, text), dark));
+  min-width: 100px;
+  text-align: center;
+  aria-live: polite;
+
+  @include respond-to(mobile) {
+    min-width: auto;
+  }
+}
+
+.media-player__progress {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  @include theme-aware('background-color', rgba(map-get($colors, primary), 0.2), rgba(map-get($colors, primary), 0.3));
+  cursor: pointer;
+  transition: height map-get(map-get($transitions, duration), fast) map-get(map-get($transitions, timing), ease-in-out);
+
+  &-bar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background-color: map-get($colors, primary);
+    transform-origin: left;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  @include hover-effect {
+    height: 6px;
+  }
+
+  // High contrast mode support
+  @include high-contrast {
+    border: 2px solid currentColor;
+  }
+}
+
+.media-player__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: map-get($spacing-scale, 5);
+  height: map-get($spacing-scale, 5);
+  border-radius: 50%;
+  border: none;
+  background-color: map-get($colors, primary);
+  color: #FFFFFF;
+  cursor: pointer;
+  @include transition(background-color, transform);
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @include hover-effect {
+    transform: scale(1.05);
+  }
+
+  // High contrast mode support
+  @include high-contrast {
+    border: 2px solid currentColor;
+    
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 2px;
+    }
+  }
+
+  svg {
+    width: map-get($spacing-scale, 3);
+    height: map-get($spacing-scale, 3);
+  }
+}
+
+.media-player__volume {
+  display: flex;
+  align-items: center;
+  gap: map-get($spacing-scale, 2);
+
+  &-slider {
+    width: 100px;
+    height: 4px;
+    @include theme-aware('background-color', rgba(map-get($colors, primary), 0.2), rgba(map-get($colors, primary), 0.3));
+    cursor: pointer;
+    
+    @include respond-to(mobile) {
+      width: 60px;
+    }
+
+    &:focus-visible {
+      @include focus-ring;
+    }
+  }
+}
+
+// Screen reader only elements
+.media-player__sr-only {
+  @include screen-reader-only;
+}
