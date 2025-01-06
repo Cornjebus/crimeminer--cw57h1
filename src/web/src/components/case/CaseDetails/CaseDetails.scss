@@ -1,0 +1,125 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+.case-details {
+  padding: map-get($spacing-scale, 4);
+  border-radius: 8px;
+  height: 100%;
+  contain: content;
+  
+  @include elevation(2);
+  @include theme-aware('background', map-get($colors, background, light), map-get($colors, background, dark));
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+  @include transition(background-color);
+
+  @include print {
+    background: none;
+    padding: 0;
+    box-shadow: none;
+  }
+}
+
+.case-details__header {
+  margin-bottom: map-get($spacing-scale, 4);
+  border-bottom: 1px solid;
+  @include theme-aware('border-color', map-get($colors, border), rgba(map-get($colors, border), 0.2));
+  transition: border-color map-get(map-get($transitions, duration), normal) map-get(map-get($transitions, timing), ease-in-out);
+}
+
+.case-details__title {
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-size: map-get(map-get($typography, font-size), 2xl);
+  font-weight: map-get(map-get($typography, font-weight), bold);
+  line-height: map-get(map-get($typography, line-height), tight);
+  @include theme-aware('color', map-get($colors, text, light), map-get($colors, text, dark));
+  margin-bottom: map-get($spacing-scale, 2);
+
+  @include respond-to(mobile) {
+    font-size: map-get(map-get($typography, font-size), xl);
+  }
+}
+
+.case-details__meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: map-get($spacing-scale, 3);
+
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+  }
+
+  @include print {
+    display: block;
+  }
+}
+
+.case-details__status {
+  display: inline-flex;
+  align-items: center;
+  padding: map-get($spacing-scale, 1) map-get($spacing-scale, 2);
+  border-radius: 4px;
+  font-weight: map-get(map-get($typography, font-weight), medium);
+  @include theme-aware('background', map-get($colors, primary), lighten(map-get($colors, primary), 10%));
+  @include theme-aware('color', #FFFFFF, #FFFFFF);
+  transition: background-color map-get(map-get($transitions, duration), normal) map-get(map-get($transitions, timing), ease-in-out);
+
+  &:focus-visible {
+    @include focus-ring(primary);
+  }
+
+  @include print {
+    border: 1px solid map-get($colors, border);
+    background: none !important;
+    color: map-get($colors, text, light) !important;
+  }
+}
+
+.case-details__actions {
+  display: flex;
+  gap: map-get($spacing-scale, 2);
+  margin-top: map-get($spacing-scale, 4);
+
+  @include respond-to(mobile) {
+    flex-direction: column;
+  }
+
+  @include print {
+    display: none;
+  }
+}
+
+.case-details__section {
+  margin-top: map-get($spacing-scale, 6);
+
+  @include respond-to(mobile) {
+    margin-top: map-get($spacing-scale, 4);
+  }
+}
+
+// High Contrast Mode Support
+@include high-contrast {
+  .case-details {
+    border: 1px solid currentColor;
+  }
+
+  .case-details__status {
+    border: 2px solid currentColor;
+    background: none !important;
+    color: currentColor !important;
+  }
+}
+
+// Reduced Motion Support
+@media (prefers-reduced-motion: reduce) {
+  .case-details,
+  .case-details__status {
+    transition: none;
+  }
+}
+
+// Print-specific styles
+@include print {
+  .case-details {
+    page-break-inside: avoid;
+  }
+}
