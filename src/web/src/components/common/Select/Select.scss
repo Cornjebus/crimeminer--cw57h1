@@ -1,0 +1,155 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+.select {
+  position: relative;
+  width: 100%;
+  font-family: map-get(map-get($typography, font-family), primary);
+  font-size: map-get(map-get($typography, font-size), md);
+  
+  // Control (trigger button)
+  &__control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: map-get($spacing-scale, 2) map-get($spacing-scale, 3);
+    border: 1px solid map-get($colors, border);
+    border-radius: 4px;
+    background-color: map-get(map-get($colors, background), light);
+    cursor: pointer;
+    
+    @include transition(border-color, background-color, box-shadow);
+    @include clickable;
+    
+    @include hover-effect {
+      border-color: map-get($colors, primary);
+    }
+    
+    @include respond-to(mobile) {
+      padding: map-get($spacing-scale, 2);
+      font-size: map-get(map-get($typography, font-size), sm);
+    }
+    
+    @include respond-to(tablet) {
+      padding: map-get($spacing-scale, 2) map-get($spacing-scale, 3);
+    }
+  }
+
+  // Dropdown menu
+  &__dropdown {
+    position: absolute;
+    top: calc(100% + #{map-get($spacing-scale, 1)});
+    left: 0;
+    width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: map-get(map-get($colors, background), light);
+    border: 1px solid map-get($colors, border);
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: map-get($z-index, dropdown);
+    
+    @include scrollbar;
+    @include transition(opacity, transform);
+    
+    &:not(.is-open) {
+      opacity: 0;
+      transform: translateY(-#{map-get($spacing-scale, 1)});
+      pointer-events: none;
+    }
+  }
+
+  // Option items
+  &__option {
+    padding: map-get($spacing-scale, 2) map-get($spacing-scale, 3);
+    cursor: pointer;
+    
+    @include transition(background-color);
+    
+    @include hover-effect {
+      background-color: rgba(map-get($colors, primary), 0.1);
+    }
+    
+    &--selected {
+      background-color: rgba(map-get($colors, primary), 0.15);
+      font-weight: map-get(map-get($typography, font-weight), medium);
+    }
+    
+    &--focused {
+      background-color: rgba(map-get($colors, primary), 0.1);
+    }
+  }
+
+  // States
+  &--focused {
+    .select__control {
+      @include focus-ring(primary);
+    }
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    
+    .select__control {
+      cursor: not-allowed;
+      background-color: rgba(map-get($colors, border), 0.1);
+    }
+  }
+
+  &--error {
+    .select__control {
+      border-color: map-get($colors, error);
+      
+      &:hover {
+        border-color: color.adjust(map-get($colors, error), $lightness: -10%);
+      }
+    }
+  }
+
+  // Dark theme support
+  @include theme-aware(
+    'background-color',
+    map-get(map-get($colors, background), light),
+    map-get(map-get($colors, background), dark)
+  );
+
+  // High contrast mode support
+  @include high-contrast {
+    .select__control {
+      border-width: 2px;
+    }
+    
+    .select__option--selected {
+      outline: 2px solid currentColor;
+      outline-offset: -2px;
+    }
+  }
+
+  // Screen reader support
+  &__label {
+    @include screen-reader-only;
+  }
+
+  // Loading state
+  &--loading {
+    .select__control {
+      cursor: wait;
+    }
+  }
+
+  // Clear button
+  &__clear {
+    margin-left: map-get($spacing-scale, 2);
+    padding: map-get($spacing-scale, 1);
+    color: map-get(map-get($colors, text), light);
+    opacity: 0.6;
+    
+    @include transition(opacity);
+    
+    @include hover-effect {
+      opacity: 1;
+    }
+  }
+}
