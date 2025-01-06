@@ -1,0 +1,222 @@
+name: Backend Deployment
+
+# Configure concurrency to prevent parallel deployments
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+# Define permissions
+permissions:
+  id-token: write
+  contents: read
+  security-events: write
+  packages: write
+
+# Trigger workflow on pushes to main (prod) and develop (staging)
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/backend-deploy.yml'
+
+env:
+  NODE_VERSION: '20.x'
+  AWS_REGION: 'us-east-1'
+  COMPLIANCE_LEVEL: 'fedramp_high'
+  ECR_REPOSITORY: 'crimeminer-backend'
+  TRIVY_SEVERITY: 'HIGH,CRITICAL'
+  DOCKER_BUILDKIT: '1'
+
+jobs:
+  security-scan:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+          
+      - name: Install Dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn audit
+          
+      - name: Run SAST Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          languages: javascript
+          queries: security-extended,security-and-quality
+          
+      - name: Scan Container Image
+        uses: aquasecurity/trivy-action@v1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: ${{ env.TRIVY_SEVERITY }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Scan Results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  build-and-push:
+    name: Build and Push Image
+    needs: security-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          version: latest
+          
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        
+      - name: Build and Push Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            --cache-from type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:cache \
+            --cache-to type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:cache,mode=max \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --file src/backend/Dockerfile \
+            --push .
+            
+      - name: Sign Container Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cosign sign --key ${{ secrets.COSIGN_PRIVATE_KEY }} \
+            $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy-staging:
+    name: Deploy to Staging
+    if: github.ref == 'refs/heads/develop'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://api.staging.crimeminer.gov
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Deploy to EKS
+        env:
+          CLUSTER_NAME: crimeminer-staging
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME
+          kubectl set image deployment/backend backend=$ECR_REPOSITORY:$IMAGE_TAG
+          kubectl rollout status deployment/backend -n staging
+          
+      - name: Validate Deployment
+        run: |
+          chmod +x .github/scripts/validate-deployment.sh
+          ./.github/scripts/validate-deployment.sh staging backend
+
+  deploy-production:
+    name: Deploy to Production
+    if: github.ref == 'refs/heads/main'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://api.crimeminer.gov
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Progressive Deployment
+        env:
+          CLUSTER_NAME: crimeminer-prod
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME
+          
+          # Deploy canary
+          kubectl set image deployment/backend-canary backend=$ECR_REPOSITORY:$IMAGE_TAG
+          kubectl rollout status deployment/backend-canary -n production
+          
+          # Validate canary
+          chmod +x .github/scripts/validate-deployment.sh
+          ./.github/scripts/validate-deployment.sh production backend-canary
+          
+          # Progressive rollout
+          for i in 25 50 75 100; do
+            kubectl scale deployment/backend --replicas=$((40 * i / 100)) -n production
+            kubectl scale deployment/backend-canary --replicas=$((40 * (100-i) / 100)) -n production
+            sleep 300
+            ./.github/scripts/validate-deployment.sh production backend
+          done
+          
+      - name: Verify FedRAMP Compliance
+        run: |
+          chmod +x .github/scripts/verify-compliance.sh
+          ./.github/scripts/verify-compliance.sh production ${{ env.COMPLIANCE_LEVEL }}
+          
+      - name: Update Audit Logs
+        if: always()
+        run: |
+          aws cloudwatch put-metric-data \
+            --namespace CrimeMiner/Deployments \
+            --metric-name DeploymentStatus \
+            --value ${{ job.status == 'success' && 1 || 0 }} \
+            --dimensions Environment=production,Service=backend
+
+  rollback:
+    name: Rollback on Failure
+    needs: [deploy-staging, deploy-production]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Perform Rollback
+        run: |
+          chmod +x .github/scripts/perform-rollback.sh
+          ./.github/scripts/perform-rollback.sh ${{ github.event.before }}
