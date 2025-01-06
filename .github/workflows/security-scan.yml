@@ -1,0 +1,191 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  packages: read
+  id-token: write
+
+env:
+  NODE_VERSION: '18.x'
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  FEDRAMP_CONTROLS: ${{ vars.FEDRAMP_CONTROLS }}
+  CJIS_POLICIES: ${{ vars.CJIS_POLICIES }}
+
+jobs:
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript, python, java
+          queries: security-extended,security-and-quality
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:javascript,typescript,python,java"
+          upload: true
+          output: sarif-results
+          fail-on: error
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: sarif-results
+
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Backend Dependency Scan
+        uses: snyk/actions/node@v0.5.0
+        with:
+          file: ./src/backend/package.json
+          args: --severity-threshold=high --fail-on=upgradable
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+
+      - name: Frontend Dependency Scan
+        uses: snyk/actions/node@v0.5.0
+        with:
+          file: ./src/web/package.json
+          args: --severity-threshold=high --fail-on=upgradable
+        env:
+          SNYK_TOKEN: ${{ env.SNYK_TOKEN }}
+
+      - name: License Compliance Check
+        run: |
+          cd src/backend && npm run audit:licenses
+          cd ../web && npm run audit:licenses
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Backend Container Scan
+        uses: aquasecurity/trivy-action@0.14.0
+        with:
+          scan-type: 'fs,config'
+          scan-ref: './src/backend'
+          format: 'sarif'
+          output: 'trivy-results-backend.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Frontend Container Scan
+        uses: aquasecurity/trivy-action@0.14.0
+        with:
+          scan-type: 'fs,config'
+          scan-ref: './src/web'
+          format: 'sarif'
+          output: 'trivy-results-frontend.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results-*.sarif
+
+  compliance-check:
+    name: Security Compliance Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [sast-scan, dependency-scan, container-scan]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: FedRAMP High Controls Validation
+        run: |
+          echo "Validating FedRAMP High controls..."
+          # Custom script to validate FedRAMP controls
+          if [ -n "$FEDRAMP_CONTROLS" ]; then
+            echo "$FEDRAMP_CONTROLS" > fedramp-controls.json
+            # Add FedRAMP validation logic here
+          fi
+
+      - name: CJIS Security Policy Compliance
+        run: |
+          echo "Checking CJIS security policy compliance..."
+          # Custom script to validate CJIS compliance
+          if [ -n "$CJIS_POLICIES" ]; then
+            echo "$CJIS_POLICIES" > cjis-policies.json
+            # Add CJIS validation logic here
+          fi
+
+      - name: Generate Compliance Report
+        run: |
+          echo "Generating comprehensive compliance report..."
+          # Combine results from all scans
+          {
+            echo "# Security Compliance Report"
+            echo "## FedRAMP High Controls"
+            cat fedramp-controls.json
+            echo "## CJIS Security Policies"
+            cat cjis-policies.json
+            echo "## Scan Results"
+            echo "- SAST Scan: ${{ needs.sast-scan.result }}"
+            echo "- Dependency Scan: ${{ needs.dependency-scan.result }}"
+            echo "- Container Scan: ${{ needs.container-scan.result }}"
+          } > compliance-report.md
+
+      - name: Upload Compliance Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: compliance-report
+          path: compliance-report.md
+          retention-days: 90
+
+      - name: Fail if Non-Compliant
+        run: |
+          if [ "${{ needs.sast-scan.result }}" != "success" ] || \
+             [ "${{ needs.dependency-scan.result }}" != "success" ] || \
+             [ "${{ needs.container-scan.result }}" != "success" ]; then
+            echo "Security compliance checks failed"
+            exit 1
+          fi
