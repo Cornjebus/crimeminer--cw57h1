@@ -1,0 +1,228 @@
+// CrimeMiner Design System Mixins
+// Version: 1.0.0
+
+@use 'sass:math';
+@use 'sass:map';
+@use 'sass:color';
+@use './variables' as *;
+
+// Utility Functions
+@function strip-unit($number) {
+  @if type-of($number) == 'number' and not unitless($number) {
+    @return math.div($number, ($number * 0 + 1));
+  }
+  @return $number;
+}
+
+@function rem($pixels) {
+  $value: strip-unit($pixels);
+  @return #{math.div($value, 16)}rem;
+}
+
+// Responsive Design Mixins
+@mixin respond-to($breakpoint, $custom-value: null) {
+  $value: if($custom-value, $custom-value, map.get($breakpoints, $breakpoint));
+  
+  @if $value {
+    @media screen and (min-width: $value) {
+      @content;
+    }
+  } @else {
+    @error 'Invalid breakpoint: #{$breakpoint}';
+  }
+}
+
+// Layout Mixins
+@mixin flex-center($direction: row) {
+  display: flex;
+  flex-direction: $direction;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin grid-container {
+  width: 100%;
+  max-width: map.get($grid, max-width);
+  margin: 0 auto;
+  padding: 0 map.get(map.get($grid, gutter), mobile);
+  
+  @include respond-to(tablet) {
+    padding: 0 map.get(map.get($grid, gutter), tablet);
+  }
+  
+  @include respond-to(desktop) {
+    padding: 0 map.get(map.get($grid, gutter), desktop);
+  }
+}
+
+// Accessibility Mixins
+@mixin focus-ring($color: primary, $width: 2px, $offset: 2px) {
+  outline: none;
+  box-shadow: 0 0 0 $width map.get($colors, $color),
+              0 0 0 #{$width + $offset} rgba(map.get($colors, $color), 0.2);
+  
+  @media (prefers-contrast: more) {
+    outline: $width solid map.get($colors, $color);
+    outline-offset: $offset;
+    box-shadow: none;
+  }
+}
+
+@mixin screen-reader-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@mixin keyboard-focus-only {
+  &:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+}
+
+// Typography Mixins
+@mixin truncate-text($lines: 1) {
+  @if $lines == 1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@mixin font-smoothing {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Visual Effects Mixins
+@mixin elevation($level, $color: rgba(0, 0, 0, 0.2)) {
+  $shadows: (
+    1: '0 2px 4px #{$color}',
+    2: '0 4px 8px #{$color}',
+    3: '0 8px 16px #{$color}',
+    4: '0 16px 24px #{$color}'
+  );
+  
+  box-shadow: #{map.get($shadows, $level)};
+}
+
+// Theme Support Mixins
+@mixin theme-aware($property, $light-value, $dark-value, $fallback: null) {
+  @if $fallback {
+    #{$property}: $fallback;
+  }
+  
+  @media (prefers-color-scheme: light) {
+    #{$property}: $light-value;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    #{$property}: $dark-value;
+  }
+  
+  [data-theme='light'] & {
+    #{$property}: $light-value;
+  }
+  
+  [data-theme='dark'] & {
+    #{$property}: $dark-value;
+  }
+}
+
+@mixin high-contrast {
+  @media (prefers-contrast: more) {
+    @content;
+  }
+}
+
+// Animation Mixins
+@mixin transition($properties...) {
+  $transitions: ();
+  
+  @each $property in $properties {
+    $transitions: append(
+      $transitions,
+      $property map.get(map.get($transitions, duration), normal) map.get(map.get($transitions, timing), ease-in-out),
+      comma
+    );
+  }
+  
+  transition: $transitions;
+}
+
+@mixin animate-fade {
+  @include transition(opacity);
+  
+  &-enter {
+    opacity: 0;
+  }
+  
+  &-enter-active,
+  &-enter-done {
+    opacity: 1;
+  }
+  
+  &-exit {
+    opacity: 1;
+  }
+  
+  &-exit-active,
+  &-exit-done {
+    opacity: 0;
+  }
+}
+
+// Interactive Element Mixins
+@mixin clickable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+@mixin hover-effect {
+  @media (hover: hover) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
+// Cross-browser Support Mixins
+@mixin scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(map.get($colors, text, light), 0.2);
+    border-radius: 4px;
+    
+    @include theme-aware(
+      'background',
+      rgba(map.get($colors, text, light), 0.2),
+      rgba(map.get($colors, text, dark), 0.2)
+    );
+  }
+}
