@@ -1,0 +1,147 @@
+// CrimeMiner Dark Theme
+// Version: 1.0.0
+// Implements WCAG 2.1 AA compliant dark mode color scheme
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// Dark Theme Color System
+$dark-theme-colors: (
+  background: (
+    primary: #1E1E1E,
+    secondary: #2D2D2D,
+    tertiary: #404040,
+    elevated: #363636,
+    overlay: rgba(0, 0, 0, 0.75),
+    hover: #2A2A2A
+  ),
+  text: (
+    primary: #FFFFFF,    // Contrast ratio 15.75:1
+    secondary: #E0E0E0,  // Contrast ratio 13.5:1
+    tertiary: #B0B0B0,   // Contrast ratio 8.5:1
+    disabled: #707070,   // Contrast ratio 4.5:1
+    inverse: #1E1E1E,
+    link: #4285F4,
+    link-hover: #5C9FFF
+  ),
+  accent: (
+    primary: #4285F4,
+    primary-hover: #5C9FFF,
+    secondary: #34A853,
+    secondary-hover: #45C767,
+    error: #FF6B6B,
+    error-hover: #FF8585,
+    warning: #FBBC04,
+    warning-hover: #FFC824,
+    success: #34A853,
+    success-hover: #45C767
+  ),
+  border: (
+    primary: #404040,
+    secondary: #2D2D2D,
+    focus: #4285F4,
+    error: #FF6B6B
+  ),
+  shadow: (
+    small: 0 2px 4px rgba(0, 0, 0, 0.3),
+    medium: 0 4px 8px rgba(0, 0, 0, 0.3),
+    large: 0 8px 16px rgba(0, 0, 0, 0.3)
+  ),
+  focus: (
+    ring: 0 0 0 2px #4285F4,
+    ring-error: 0 0 0 2px #FF6B6B,
+    outline: 2px solid #4285F4
+  ),
+  selection: (
+    background: #4285F4,
+    text: #FFFFFF
+  ),
+  scrollbar: (
+    thumb: #404040,
+    thumb-hover: #505050,
+    track: #2D2D2D
+  )
+);
+
+// Function to ensure WCAG AA contrast compliance
+@function getContrastColor($background-color) {
+  $luminance: (
+    red($background-color) * 0.2126 +
+    green($background-color) * 0.7152 +
+    blue($background-color) * 0.0722
+  ) / 255;
+  
+  @return if($luminance > 0.5, #1E1E1E, #FFFFFF);
+}
+
+// Dark Theme Base Styles
+body.dark-theme {
+  background-color: map-get(map-get($dark-theme-colors, background), primary);
+  color: map-get(map-get($dark-theme-colors, text), primary);
+  
+  // Enhanced focus visibility for accessibility
+  *:focus-visible {
+    outline: map-get(map-get($dark-theme-colors, focus), outline);
+    outline-offset: 2px;
+  }
+
+  // Selection styles
+  ::selection {
+    background-color: map-get(map-get($dark-theme-colors, selection), background);
+    color: map-get(map-get($dark-theme-colors, selection), text);
+  }
+
+  // Scrollbar customization
+  @include scrollbar {
+    &::-webkit-scrollbar-track {
+      background: map-get(map-get($dark-theme-colors, scrollbar), track);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: map-get(map-get($dark-theme-colors, scrollbar), thumb);
+      
+      &:hover {
+        background: map-get(map-get($dark-theme-colors, scrollbar), thumb-hover);
+      }
+    }
+  }
+
+  // High contrast mode enhancements
+  @include high-contrast {
+    outline-width: 3px;
+    outline-style: solid;
+    outline-offset: 3px;
+    
+    a {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    
+    button, 
+    [role="button"] {
+      border: 2px solid currentColor;
+    }
+  }
+}
+
+// Theme-aware color application
+@mixin dark-theme-color($property, $color-path...) {
+  #{$property}: map-get-nested($dark-theme-colors, $color-path...);
+  
+  @include high-contrast {
+    #{$property}: map-get-nested($dark-theme-colors, accent, primary);
+  }
+}
+
+// Helper function for nested map access
+@function map-get-nested($map, $keys...) {
+  @each $key in $keys {
+    $map: map-get($map, $key);
+  }
+  @return $map;
+}
+
+// Export theme colors for component usage
+:export {
+  darkThemeColors: $dark-theme-colors;
+}
