@@ -1,0 +1,134 @@
+@use '../../../assets/styles/variables' as *;
+@use '../../../assets/styles/mixins' as *;
+
+// Node type color mapping
+$network-graph-colors: (
+  person: $colors.primary,
+  location: $colors.secondary,
+  organization: #9334E6,
+  vehicle: #F29D38,
+  phone: #37B9F1,
+  email: #FF61D3
+);
+
+// Calculate node size based on relationship count
+@function calculate-node-size($relationship-count) {
+  $base-size: 8px;
+  $size-increment: 2px;
+  $max-size: 20px;
+  
+  $calculated-size: $base-size + ($relationship-count * $size-increment);
+  @return min($calculated-size, $max-size);
+}
+
+.network-graph {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  overflow: hidden;
+
+  @media print {
+    min-height: 100%;
+    page-break-inside: avoid;
+  }
+}
+
+.graph-canvas {
+  @include theme-aware(background, $colors.background.light, $colors.background.dark);
+  border-radius: $spacing-scale.2;
+  touch-action: none;
+  outline: none;
+
+  &:focus-visible {
+    outline: 2px solid $colors.primary;
+    outline-offset: 2px;
+  }
+}
+
+.node {
+  cursor: pointer;
+  transition: $transitions.duration.fast;
+
+  &:hover {
+    filter: brightness(1.2);
+  }
+
+  &:focus {
+    outline: 2px solid $colors.primary;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion) {
+    transition: none;
+  }
+}
+
+.node-details {
+  position: absolute;
+  top: $spacing-scale.3;
+  right: $spacing-scale.3;
+  width: 300px;
+  @include elevation(3);
+  @include theme-aware(background, $colors.background.light, $colors.background.dark);
+  border-radius: $spacing-scale.2;
+  padding: $spacing-scale.3;
+
+  @include respond-to(mobile) {
+    width: calc(100% - #{$spacing-scale.3} * 2);
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  scrollbar-width: thin;
+  @include theme-aware(scrollbar-color, rgba(0,0,0,0.3), rgba(255,255,255,0.3));
+}
+
+.graph-controls {
+  position: absolute;
+  bottom: $spacing-scale.3;
+  left: $spacing-scale.3;
+  display: flex;
+  gap: $spacing-scale.2;
+  @include elevation(2);
+
+  button {
+    @include theme-aware(background, $colors.background.light, $colors.background.dark);
+    border: 1px solid;
+    @include theme-aware(border-color, $colors.border, rgba(255,255,255,0.2));
+    border-radius: $spacing-scale.1;
+    padding: $spacing-scale.2;
+    cursor: pointer;
+
+    &:hover {
+      @include theme-aware(background, darken($colors.background.light, 5%), lighten($colors.background.dark, 5%));
+    }
+
+    &:focus-visible {
+      outline: 2px solid $colors.primary;
+      outline-offset: 2px;
+    }
+  }
+}
+
+.graph-legend {
+  position: absolute;
+  bottom: $spacing-scale.3;
+  right: $spacing-scale.3;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-scale.2;
+  @include elevation(2);
+  @include theme-aware(background, rgba(255,255,255,0.9), rgba(0,0,0,0.9));
+  padding: $spacing-scale.2;
+  border-radius: $spacing-scale.1;
+
+  @include respond-to(mobile) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    right: 0;
+    @include theme-aware(background, $colors.background.light, $colors.background.dark);
+  }
+}
