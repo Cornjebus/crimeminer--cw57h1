@@ -1,0 +1,146 @@
+# HashiCorp Vault v1.13.3 Configuration
+# FedRAMP High and CJIS Compliant Secret Management for CrimeMiner Platform
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-config
+  namespace: crimeminer-system
+  labels:
+    app.kubernetes.io/name: vault
+    app.kubernetes.io/part-of: crimeminer
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+  annotations:
+    compliance.fedramp.gov/control-baseline: high
+    security.vault.io/version: "1.13.3"
+data:
+  vault-config.hcl: |
+    # Storage Configuration - Raft for High Availability
+    storage "raft" {
+      path = "/vault/data"
+      node_id = "${POD_NAME}"
+      retry_join {
+        leader_api_addr = "https://vault-0.vault-internal:8200"
+        leader_ca_cert_file = "${VAULT_CACERT}"
+      }
+      performance_multiplier = 2
+      snapshot_interval = "30m"
+      retry_interval = "10s"
+      autopilot {
+        cleanup_dead_servers = true
+        last_contact_threshold = "30s"
+        server_stabilization_time = "10s"
+      }
+    }
+
+    # Listener Configuration - TLS 1.2+ Required
+    listener "tcp" {
+      address = "0.0.0.0:8200"
+      tls_cert_file = "/vault/tls/tls.crt"
+      tls_key_file = "/vault/tls/tls.key"
+      tls_min_version = "tls12"
+      tls_cipher_suites = [
+        "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+        "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+      ]
+      tls_prefer_server_cipher_suites = true
+      tls_require_and_verify_client_cert = true
+      x_forwarded_for_authorized_addrs = "10.0.0.0/8"
+    }
+
+    # Auto-unseal using AWS KMS
+    seal "awskms" {
+      region = "${AWS_REGION}"
+      kms_key_id = "${KMS_KEY_ID}"
+      endpoint = "https://kms.${AWS_REGION}.amazonaws.com"
+      key_rotation_period = "30d"
+    }
+
+    # Core Configuration
+    ui = false
+    log_level = "INFO"
+    default_lease_ttl = "24h"
+    max_lease_ttl = "720h"
+    api_addr = "https://vault.${NAMESPACE}.svc:8200"
+    cluster_addr = "https://${POD_NAME}.vault-internal:8201"
+
+    # Audit Logging Configuration
+    audit {
+      device "file" {
+        path = "/vault/audit/audit.log"
+        log_raw = true
+        hmac_accessor = true
+        mode = "0600"
+        format = "json"
+        prefix = "vault-audit"
+      }
+      
+      device "syslog" {
+        tag = "vault"
+        facility = "AUTH"
+        format = "json"
+        log_raw = true
+      }
+    }
+
+    # Telemetry Configuration
+    telemetry {
+      prometheus_retention_time = "30m"
+      disable_hostname = true
+      enable_hostname_label = false
+      usage_gauge_period = "10m"
+      maximum_gauge_cardinality = 500
+      
+      statsite {
+        address = "statsite:8125"
+        prefix = "vault"
+      }
+      
+      statsd {
+        address = "statsd:8125"
+        prefix = "vault"
+      }
+    }
+
+    # Service Registration
+    service_registration "kubernetes" {
+      namespace = "${POD_NAMESPACE}"
+      pod_name = "${POD_NAME}"
+    }
+
+    # Enterprise Features
+    entropy "seal" {
+      mode = "augmentation"
+    }
+
+    # Replication Configuration
+    replication {
+      resolver_discover_servers = true
+      consistency_check_interval = "10m"
+    }
+
+    # HSM Integration
+    hsm {
+      plugin_name = "pkcs11"
+      slot = "0"
+      pin = "${HSM_PIN}"
+      key_label = "vault-master-key"
+      mechanism = "0x1085"
+      force_rw_session = "true"
+    }
+
+    # Plugin Configuration
+    plugin_directory = "/vault/plugins"
+
+    # Quota Management
+    quota "lease_count" {
+      path = "auth/token/create"
+      max_leases = 1000
+    }
+
+    # Rate Limiting
+    rate_limit {
+      average = 10
+      burst = 100
+    }
