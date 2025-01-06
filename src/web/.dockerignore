@@ -1,0 +1,110 @@
+node_modules
+package-lock.json
+yarn.lock
+.pnp
+.pnp.js
+
+# Build outputs
+dist
+build
+coverage
+.next
+.nuxt
+.output
+
+# Version control
+.git
+.gitignore
+.gitattributes
+.svn
+.hg
+
+# Development environments
+.vscode
+.idea
+.sublime
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test files
+tests
+**/__tests__
+**/*.test.*
+**/*.spec.*
+**/test.*
+**/spec.*
+jest.config.*
+coverage
+.nyc_output
+
+# Documentation
+*.md
+docs
+CHANGELOG
+LICENSE
+CONTRIBUTING
+
+# Development tools
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+.editorconfig
+.husky
+.lint-staged*
+.github
+.gitlab
+.circleci
+.travis.yml
+
+# Storybook
+.storybook
+**/*.stories.*
+storybook-static
+
+# Sensitive & environment files
+.env*
+.env.local
+.env.development
+.env.test
+.env.production
+**/*.key
+**/*.pem
+**/*.cert
+**/*.pfx
+**/*.p12
+
+# Logs and temp files
+**/*.log
+**/*.log.*
+.temp
+temp
+tmp
+*.tmp
+.cache
+
+# Debug files
+**/*.map
+**/*.debug
+
+# Misc development files
+.npmrc
+.yarnrc
+.nvmrc
+.nycrc
+.babelrc*
+.browserslistrc
+tsconfig.tsbuildinfo
+*.tgz
+*.tar
+*.zip
+*.gz
+
+# Exceptions - files needed for production build
+!vite.config.ts
+!tsconfig.json
+!index.html
+!public
+!src
+!package.json
