@@ -1,0 +1,210 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Main Dashboard Layout
+.dashboard {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  @include theme-aware('background-color', map-get($colors, background, light), map-get($colors, background, dark));
+  @include transition(grid-template-columns);
+
+  // Mobile-first responsive layout
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+  }
+
+  @include respond-to(desktop) {
+    grid-template-columns: 300px 1fr;
+  }
+}
+
+// Left Sidebar
+.dashboard__sidebar {
+  @include theme-aware('background-color', 
+    lighten(map-get($colors, background, light), 2%),
+    darken(map-get($colors, background, dark), 2%)
+  );
+  border-right: 1px solid map-get($colors, border);
+  padding: map-get($spacing-scale, 4);
+  overflow-y: auto;
+  @include scrollbar;
+  z-index: map-get($z-index, header);
+  @include transition(transform);
+
+  // Mobile sidebar behavior
+  @include respond-to(mobile) {
+    position: fixed;
+    transform: translateX(-100%);
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 300px;
+
+    &--open {
+      transform: translateX(0);
+    }
+  }
+
+  @include respond-to(desktop) {
+    position: relative;
+    transform: none;
+  }
+}
+
+// Main Content Area
+.dashboard__main {
+  padding: map-get($spacing-scale, 4);
+  overflow-y: auto;
+  @include scrollbar;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+
+  @include respond-to(mobile) {
+    padding: map-get($spacing-scale, 3);
+  }
+}
+
+// Dashboard Grid Layout
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: map-get($spacing-scale, 4);
+  align-items: start;
+  margin-bottom: map-get($spacing-scale, 6);
+
+  @include respond-to(tablet) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include respond-to(desktop) {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+// Dashboard Widget Base Styles
+.dashboard__widget {
+  @include theme-aware('background-color', 
+    lighten(map-get($colors, background, light), 4%),
+    darken(map-get($colors, background, dark), 4%)
+  );
+  border-radius: 12px;
+  padding: map-get($spacing-scale, 4);
+  @include elevation(2);
+  @include transition(transform, box-shadow);
+  will-change: transform, box-shadow;
+
+  @include hover-effect {
+    transform: translateY(-2px);
+    @include elevation(3);
+  }
+
+  @include focus-visible {
+    @include focus-ring(primary);
+  }
+
+  // High contrast mode adjustments
+  @include high-contrast {
+    border: 2px solid map-get($colors, text, light);
+    box-shadow: none;
+  }
+}
+
+// Timeline Widget
+.dashboard__timeline {
+  grid-column: span 2;
+  height: 300px;
+  overflow: hidden;
+  position: relative;
+
+  @include respond-to(mobile) {
+    grid-column: span 1;
+    height: 200px;
+  }
+
+  @include respond-to(tablet) {
+    grid-column: span 1;
+    height: 250px;
+  }
+
+  @include respond-to(desktop) {
+    grid-column: span 2;
+    height: 300px;
+  }
+}
+
+// Alerts Panel
+.dashboard__alerts {
+  max-height: 400px;
+  overflow-y: auto;
+  @include scrollbar;
+  padding-right: map-get($spacing-scale, 2);
+
+  // Ensure touch targets are large enough
+  li {
+    @include touch-target {
+      min-height: 44px;
+      padding: map-get($spacing-scale, 2) 0;
+    }
+  }
+}
+
+// Case Browser
+.dashboard__cases {
+  @include flex-center(column);
+  gap: map-get($spacing-scale, 3);
+  
+  // Case list item styles
+  &-item {
+    width: 100%;
+    padding: map-get($spacing-scale, 3);
+    border-radius: 8px;
+    @include theme-aware('background-color', 
+      lighten(map-get($colors, background, light), 3%),
+      darken(map-get($colors, background, dark), 3%)
+    );
+    @include transition(background-color);
+    @include clickable;
+
+    &:hover {
+      @include theme-aware('background-color', 
+        lighten(map-get($colors, background, light), 6%),
+        darken(map-get($colors, background, dark), 6%)
+      );
+    }
+
+    &--active {
+      border-left: 4px solid map-get($colors, primary);
+    }
+  }
+}
+
+// Quick Actions Panel
+.dashboard__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: map-get($spacing-scale, 2);
+  margin-top: map-get($spacing-scale, 4);
+
+  button {
+    @include clickable;
+    @include flex-center;
+    min-height: 44px;
+    border-radius: 8px;
+    @include theme-aware('background-color', 
+      lighten(map-get($colors, background, light), 5%),
+      darken(map-get($colors, background, dark), 5%)
+    );
+    @include transition(background-color, transform);
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
