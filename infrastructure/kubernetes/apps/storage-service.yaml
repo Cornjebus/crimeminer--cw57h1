@@ -1,0 +1,219 @@
+# Storage Service Kubernetes Deployment Manifest
+# Version: 1.0.0
+# FedRAMP High and CJIS Compliant Configuration
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-service
+  namespace: crimeminer-backend
+  labels:
+    app: storage-service
+    compliance-level: fedramp-high
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "https"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "${AWS_ACM_CERT_ARN}"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+spec:
+  ports:
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: metrics
+  selector:
+    app: storage-service
+  type: ClusterIP
+  sessionAffinity: ClientIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-service
+  namespace: crimeminer-backend
+  labels:
+    app: storage-service
+    compliance-level: fedramp-high
+    data-classification: sensitive-law-enforcement
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: storage-service
+      compliance-level: fedramp-high
+  template:
+    metadata:
+      labels:
+        app: storage-service
+        compliance-level: fedramp-high
+        security.istio.io/tlsMode: strict
+      annotations:
+        compliance.fedramp.gov/control-baseline: "high"
+        security.istio.io/tlsMode: "istio"
+        backup.velero.io/backup-volumes: "storage-keys"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "storage-service"
+    spec:
+      serviceAccountName: storage-service-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - storage-service
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: storage-service
+          image: crimeminer/storage-service:latest
+          imagePullPolicy: Always
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: "2"
+              memory: "4Gi"
+            limits:
+              cpu: "4"
+              memory: "8Gi"
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+              name: http
+            - containerPort: 9090
+              protocol: TCP
+              name: metrics
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: AWS_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secrets
+                  key: aws-region
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secrets
+                  key: s3-bucket
+            - name: AZURE_STORAGE_ACCOUNT
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secrets
+                  key: azure-account
+            - name: ENCRYPTION_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secrets
+                  key: encryption-key-id
+            - name: KMS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: storage-secrets
+                  key: kms-key-id
+          volumeMounts:
+            - name: storage-keys
+              mountPath: /etc/storage/keys
+              readOnly: true
+            - name: audit-logs
+              mountPath: /var/log/audit
+            - name: tmp
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            successThreshold: 1
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 3000
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+      volumes:
+        - name: storage-keys
+          secret:
+            secretName: storage-encryption-keys
+            defaultMode: 0400
+        - name: audit-logs
+          persistentVolumeClaim:
+            claimName: storage-audit-logs
+        - name: tmp
+          emptyDir: {}
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: storage-service-hpa
+  namespace: crimeminer-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: storage-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
