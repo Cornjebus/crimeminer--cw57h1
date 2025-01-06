@@ -1,0 +1,215 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Button base dimensions
+$button-height: (
+  small: 32px,
+  medium: 40px,
+  large: 48px
+);
+
+// Button padding scale
+$button-padding: (
+  small: map.get($spacing-scale, 2) map.get($spacing-scale, 3),
+  medium: map.get($spacing-scale, 3) map.get($spacing-scale, 4),
+  large: map.get($spacing-scale, 4) map.get($spacing-scale, 5)
+);
+
+// WCAG touch target minimum size
+$button-touch-target: 44px;
+$button-icon-spacing: map.get($spacing-scale, 2);
+$button-ripple-duration: 0.3s;
+
+// Base button styles
+.button {
+  @include flex-center;
+  @include clickable;
+  @include font-smoothing;
+  
+  position: relative;
+  min-width: $button-touch-target;
+  min-height: $button-touch-target;
+  padding: map.get($button-padding, medium);
+  border: none;
+  border-radius: 4px;
+  font-family: map.get(map.get($typography, font-family), primary);
+  font-weight: map.get(map.get($typography, font-weight), medium);
+  font-size: map.get(map.get($typography, font-size), md);
+  line-height: map.get(map.get($typography, line-height), normal);
+  text-align: center;
+  text-decoration: none;
+  overflow: hidden;
+  transition: all map.get(map.get($transitions, duration), normal) map.get(map.get($transitions, timing), ease-in-out);
+
+  // Focus state
+  &:focus-visible {
+    @include focus-ring(primary);
+  }
+
+  // Disabled state
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  // Loading state
+  &--loading {
+    cursor: wait;
+    pointer-events: none;
+    
+    .button__spinner {
+      display: inline-block;
+      margin-right: $button-icon-spacing;
+    }
+  }
+}
+
+// Button variants
+.button--primary {
+  @include theme-aware(
+    'background-color',
+    map.get($colors, primary),
+    lighten(map.get($colors, primary), 10%)
+  );
+  @include theme-aware(
+    'color',
+    map.get(map.get($colors, text), light),
+    map.get(map.get($colors, text), dark)
+  );
+
+  @include hover-effect {
+    background-color: darken(map.get($colors, primary), 10%);
+  }
+
+  &:active {
+    background-color: darken(map.get($colors, primary), 15%);
+  }
+}
+
+.button--secondary {
+  @include theme-aware(
+    'background-color',
+    map.get($colors, secondary),
+    lighten(map.get($colors, secondary), 10%)
+  );
+  color: map.get(map.get($colors, text), light);
+
+  @include hover-effect {
+    background-color: darken(map.get($colors, secondary), 10%);
+  }
+
+  &:active {
+    background-color: darken(map.get($colors, secondary), 15%);
+  }
+}
+
+// Emergency action button - high visibility for critical actions
+.button--emergency {
+  background-color: map.get($colors, error);
+  color: map.get(map.get($colors, text), light);
+  font-weight: map.get(map.get($typography, font-weight), bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  @include hover-effect {
+    background-color: darken(map.get($colors, error), 10%);
+  }
+
+  &:active {
+    background-color: darken(map.get($colors, error), 15%);
+  }
+
+  // Pulsing animation for emergency buttons
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    animation: emergency-pulse 2s infinite;
+  }
+}
+
+// Size variants
+.button--small {
+  height: map.get($button-height, small);
+  padding: map.get($button-padding, small);
+  font-size: map.get(map.get($typography, font-size), sm);
+}
+
+.button--large {
+  height: map.get($button-height, large);
+  padding: map.get($button-padding, large);
+  font-size: map.get(map.get($typography, font-size), lg);
+}
+
+// Icon support
+.button__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: $button-icon-spacing;
+
+  &--right {
+    margin-right: 0;
+    margin-left: $button-icon-spacing;
+  }
+}
+
+// High contrast mode adjustments
+@include high-contrast {
+  .button {
+    border: 2px solid currentColor;
+    
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 4px;
+    }
+  }
+}
+
+// Ripple effect animation
+@keyframes button-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+// Emergency button pulse animation
+@keyframes emergency-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(map.get($colors, error), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(map.get($colors, error), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(map.get($colors, error), 0);
+  }
+}
+
+// Responsive adjustments
+@include respond-to(mobile) {
+  .button {
+    width: 100%;
+  }
+}
+
+// Reduced motion preferences
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+  
+  .button--emergency::after {
+    animation: none;
+  }
+}
