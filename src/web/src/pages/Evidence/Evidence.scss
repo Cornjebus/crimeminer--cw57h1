@@ -1,0 +1,209 @@
+// Import design system variables and mixins
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Evidence Page Container
+.evidence-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+
+  @include theme-aware(
+    'background-color',
+    map.get($colors, background, light),
+    map.get($colors, background, dark)
+  );
+
+  @include theme-aware(
+    'color',
+    map.get($colors, text, light),
+    map.get($colors, text, dark)
+  );
+
+  padding: map.get($spacing-scale, 3);
+
+  @include respond-to(mobile) {
+    padding: map.get($spacing-scale, 2);
+  }
+}
+
+// Page Header
+.evidence-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: map.get($spacing-scale, 3);
+  padding: map.get($spacing-scale, 3);
+  border-radius: 8px;
+  
+  @include theme-aware(
+    'background-color',
+    lighten(map.get($colors, background, light), 3%),
+    lighten(map.get($colors, background, dark), 3%)
+  );
+
+  @include theme-aware(
+    'border',
+    1px solid map.get($colors, border),
+    1px solid rgba(map.get($colors, border), 0.2)
+  );
+
+  @include elevation(2);
+
+  &:focus-within {
+    @include focus-ring(primary);
+  }
+}
+
+// Main Content Layout
+.evidence-page__content {
+  display: grid;
+  gap: map.get($spacing-scale, 3);
+  height: calc(100% - 80px); // Account for header height
+  overflow: hidden;
+  
+  // Responsive grid layout
+  grid-template-columns: 1fr;
+  
+  @include respond-to(tablet) {
+    grid-template-columns: 300px 1fr;
+  }
+  
+  @include respond-to(desktop) {
+    grid-template-columns: 350px 1fr;
+  }
+}
+
+// Sidebar Panel
+.evidence-page__sidebar {
+  @include theme-aware(
+    'background-color',
+    lighten(map.get($colors, background, light), 3%),
+    lighten(map.get($colors, background, dark), 3%)
+  );
+  
+  border-radius: 8px;
+  padding: map.get($spacing-scale, 3);
+  overflow-y: auto;
+  
+  @include scrollbar;
+  
+  // Mobile sidebar behavior
+  @include respond-to(mobile) {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 85%;
+    max-width: 320px;
+    z-index: map.get($z-index, dropdown);
+    transform: translateX(-100%);
+    transition: transform map.get(map.get($transitions, duration), normal) 
+                map.get(map.get($transitions, timing), ease-in-out);
+    
+    &--open {
+      transform: translateX(0);
+    }
+  }
+
+  // High contrast support
+  @include high-contrast {
+    border: 2px solid map.get($colors, text, light);
+  }
+}
+
+// Main Content Area
+.evidence-page__main {
+  @include theme-aware(
+    'background-color',
+    lighten(map.get($colors, background, light), 3%),
+    lighten(map.get($colors, background, dark), 3%)
+  );
+  
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  
+  @include elevation(1);
+  
+  &:focus-within {
+    @include focus-ring(primary);
+  }
+}
+
+// Evidence Viewer Controls
+.evidence-page__controls {
+  display: flex;
+  align-items: center;
+  gap: map.get($spacing-scale, 2);
+  padding: map.get($spacing-scale, 2);
+  
+  @include theme-aware(
+    'background-color',
+    darken(map.get($colors, background, light), 3%),
+    lighten(map.get($colors, background, dark), 5%)
+  );
+  
+  border-bottom: 1px solid;
+  @include theme-aware(
+    'border-color',
+    map.get($colors, border),
+    rgba(map.get($colors, border), 0.2)
+  );
+}
+
+// Screen Reader Only Elements
+.evidence-page__sr-only {
+  @include screen-reader-only;
+}
+
+// Loading State
+.evidence-page__loading {
+  @include flex-center;
+  height: 100%;
+  
+  @include theme-aware(
+    'background-color',
+    rgba(map.get($colors, background, light), 0.8),
+    rgba(map.get($colors, background, dark), 0.8)
+  );
+}
+
+// Error State
+.evidence-page__error {
+  @include flex-center(column);
+  height: 100%;
+  padding: map.get($spacing-scale, 4);
+  text-align: center;
+  
+  @include theme-aware(
+    'color',
+    map.get($colors, error),
+    lighten(map.get($colors, error), 10%)
+  );
+}
+
+// Print Styles
+@media print {
+  .evidence-page {
+    height: auto;
+    overflow: visible;
+    
+    &__sidebar,
+    &__controls {
+      display: none;
+    }
+    
+    &__content {
+      display: block;
+    }
+    
+    &__main {
+      overflow: visible;
+      box-shadow: none;
+    }
+  }
+}
