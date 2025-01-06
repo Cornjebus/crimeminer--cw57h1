@@ -1,0 +1,161 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+.settings {
+  padding: $spacing-scale-5;
+  max-width: 800px;
+  margin: 0 auto;
+  contain: layout;
+  min-height: 100vh;
+
+  @include respond-to('mobile') {
+    padding: $spacing-scale-3;
+  }
+
+  @include respond-to('tablet') {
+    padding: $spacing-scale-4;
+  }
+}
+
+.settings__section {
+  margin-bottom: $spacing-scale-6;
+  padding-bottom: $spacing-scale-4;
+  border-bottom: 1px solid;
+  @include theme-aware('border-color', map-get($colors, 'border'), rgba(map-get($colors, 'border'), 0.2));
+
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+}
+
+.settings__title {
+  font-size: clamp(1.5rem, 2vw, 2rem);
+  font-weight: map-get(map-get($typography, 'font-weight'), 'bold');
+  margin-bottom: $spacing-scale-4;
+  @include theme-aware('color', map-get(map-get($colors, 'text'), 'light'), map-get(map-get($colors, 'text'), 'dark'));
+  
+  @include high-contrast {
+    font-weight: 900;
+  }
+}
+
+.settings__form {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-scale-4;
+  width: 100%;
+}
+
+.settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-scale-2;
+  
+  &[role="group"] {
+    padding: $spacing-scale-3;
+    border-radius: 8px;
+    @include theme-aware('background', rgba(map-get($colors, 'background', 'light'), 0.5), rgba(map-get($colors, 'background', 'dark'), 0.5));
+  }
+}
+
+.settings__label {
+  font-weight: map-get(map-get($typography, 'font-weight'), 'medium');
+  @include theme-aware('color', map-get(map-get($colors, 'text'), 'light'), map-get(map-get($colors, 'text'), 'dark'));
+  font-size: map-get(map-get($typography, 'font-size'), 'md');
+  cursor: pointer;
+
+  @include high-contrast {
+    font-weight: map-get(map-get($typography, 'font-weight'), 'bold');
+  }
+}
+
+.settings__control {
+  display: flex;
+  align-items: center;
+  gap: $spacing-scale-3;
+  min-height: 44px; // Touch target size
+  touch-action: manipulation;
+
+  @include respond-to('mobile') {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  @include respond-to('tablet') {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  input, select, textarea {
+    @include focus-ring('primary');
+    min-height: 44px;
+    padding: $spacing-scale-2 $spacing-scale-3;
+    border-radius: 4px;
+    border: 1px solid;
+    @include theme-aware('border-color', map-get($colors, 'border'), rgba(map-get($colors, 'border'), 0.3));
+    @include theme-aware('background', map-get($colors, 'background', 'light'), map-get($colors, 'background', 'dark'));
+    @include theme-aware('color', map-get($colors, 'text', 'light'), map-get($colors, 'text', 'dark'));
+    width: 100%;
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.settings__preview {
+  padding: $spacing-scale-4;
+  border-radius: 8px;
+  @include theme-aware('background', map-get($colors, 'background', 'light'), map-get($colors, 'background', 'dark'));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  @include high-contrast {
+    border: 2px solid currentColor;
+    box-shadow: none;
+  }
+}
+
+.settings__actions {
+  display: flex;
+  gap: $spacing-scale-3;
+  margin-top: $spacing-scale-5;
+  flex-wrap: wrap;
+
+  @include respond-to('mobile') {
+    justify-content: stretch;
+    flex-direction: column;
+  }
+
+  @include respond-to('tablet') {
+    justify-content: flex-end;
+    flex-direction: row;
+  }
+
+  button {
+    min-width: 120px;
+    min-height: 44px;
+    padding: $spacing-scale-2 $spacing-scale-4;
+    border-radius: 4px;
+    font-weight: map-get(map-get($typography, 'font-weight'), 'medium');
+    @include focus-ring('primary');
+    @include clickable;
+
+    &[type="submit"] {
+      background-color: map-get($colors, 'primary');
+      color: #FFFFFF;
+
+      @include high-contrast {
+        border: 2px solid currentColor;
+      }
+    }
+
+    &[type="button"] {
+      @include theme-aware('background', map-get($colors, 'background', 'light'), map-get($colors, 'background', 'dark'));
+      @include theme-aware('color', map-get($colors, 'text', 'light'), map-get($colors, 'text', 'dark'));
+      border: 1px solid;
+      @include theme-aware('border-color', map-get($colors, 'border'), rgba(map-get($colors, 'border'), 0.3));
+    }
+  }
+}
