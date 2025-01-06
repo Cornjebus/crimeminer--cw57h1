@@ -1,0 +1,148 @@
+# Jaeger Configuration v1.42.0
+# FedRAMP High & CJIS Compliant Configuration
+# Retention: 7 years
+
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+    compliance: fedramp-high
+spec:
+  strategy: production
+  storage:
+    type: elasticsearch
+    options:
+      es.server-urls: https://elasticsearch:9200
+      es.tls.enabled: true
+      es.tls.skip-host-verify: false
+      es.num-shards: 5
+      es.num-replicas: 2
+      es.max-doc-count: 25000000
+      es.index-prefix: jaeger
+      es.retention: 7y
+    esIndexCleaner:
+      enabled: true
+      numberOfDays: 2555  # 7 years
+      schedule: "0 0 * * *"
+  
+  sampling:
+    default:
+      type: probabilistic
+      param: 1.0
+    service_mappings:
+    - service: api-gateway
+      type: probabilistic
+      param: 1.0
+    - service: auth-service
+      type: probabilistic
+      param: 1.0
+    - service: evidence-service
+      type: probabilistic
+      param: 1.0
+    - service: ml-service
+      type: probabilistic
+      param: 0.5
+
+  agent:
+    strategy: DaemonSet
+    collector:
+      host_port: 14250
+      grpc: true
+      tls:
+        enabled: true
+        cert: /etc/certs/collector.crt
+        key: /etc/certs/collector.key
+        ca: /etc/certs/ca.crt
+
+  collector:
+    resources:
+      limits:
+        cpu: 4
+        memory: 16Gi
+      requests:
+        cpu: 2
+        memory: 8Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 80
+
+  query:
+    base_path: /jaeger
+    bearer_token_propagation: true
+    additional_headers:
+      - x-request-id
+      - x-b3-traceid
+      - x-b3-spanid
+      - x-trace-id
+      - x-session-id
+    resources:
+      limits:
+        cpu: 2
+        memory: 8Gi
+      requests:
+        cpu: 1
+        memory: 4Gi
+
+  ingress:
+    enabled: true
+    security: tls
+    annotations:
+      kubernetes.io/tls-acme: "true"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+  security:
+    tls:
+      enabled: true
+      cert: /etc/certs/tls.crt
+      key: /etc/certs/tls.key
+      ca: /etc/certs/ca.crt
+      minVersion: TLS1.2
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+
+    authentication:
+      type: oauth2
+      oauth2:
+        issuer_url: https://keycloak.crimeminer.gov/auth/realms/crimeminer
+        client_id: jaeger
+        client_secret: ${JAEGER_OAUTH_CLIENT_SECRET}
+        scopes:
+          - openid
+          - profile
+          - email
+
+    authorization:
+      enabled: true
+      roles:
+        - jaeger-viewer
+        - jaeger-admin
+      audit_logging:
+        enabled: true
+        retention: 7y
+
+  backup:
+    enabled: true
+    schedule: "0 0 * * *"
+    retention: 90d
+
+  storage_backup:
+    enabled: true
+    elasticsearch:
+      indices:
+        - jaeger-*
+      repository:
+        type: s3
+        settings:
+          bucket: jaeger-backup
+          region: us-gov-west-1
+          server_side_encryption: true
+          storage_class: STANDARD_IA
+
+  annotations:
+    compliance.fedramp.gov/control-family: "Audit and Accountability"
+    security.compliance.gov/data-classification: "sensitive"
