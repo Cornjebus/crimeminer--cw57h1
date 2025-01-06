@@ -1,0 +1,229 @@
+# Kubernetes manifest for CrimeMiner service mesh configuration
+# Implements FedRAMP High and CJIS compliant Istio service mesh with zero-trust security
+# Version: 1.18.2
+
+---
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: istio-operator
+  namespace: crimeminer-system
+  labels:
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: service-mesh
+    compliance-level: fedramp-high
+spec:
+  profile: default
+  components:
+    # Control plane configuration
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "4Gi"
+          limits:
+            cpu: "2000m" 
+            memory: "8Gi"
+        hpaSpec:
+          minReplicas: 2
+          maxReplicas: 5
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1337
+          fsGroup: 1337
+        
+    # Ingress gateway configuration
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "2Gi"
+            limits:
+              cpu: "2000m"
+              memory: "4Gi"
+          hpaSpec:
+            minReplicas: 2
+            maxReplicas: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1337
+            fsGroup: 1337
+          service:
+            type: LoadBalancer
+            ports:
+              - port: 443
+                name: https
+                protocol: TCP
+
+  # Global mesh configuration
+  values:
+    global:
+      # mTLS configuration
+      mtls:
+        enabled: true
+        mode: STRICT
+        autoMtls: true
+      
+      # Sidecar proxy configuration
+      proxy:
+        privileged: false
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        holdApplicationUntilProxyStarts: true
+        
+    # Security settings
+    security:
+      peerAuthentication:
+        mode: STRICT
+      certificateAuthority:
+        workloadCertTTL: "24h"
+        maxWorkloadCertTTL: "48h"
+      rootCertRotation:
+        enabled: true
+        interval: "720h"
+
+    # Tracing configuration
+    tracing:
+      enabled: true
+      provider: jaeger
+      sampling: 100
+      customTags:
+        environment: production
+        compliance: fedramp-high
+        
+    # Telemetry configuration  
+    telemetry:
+      enabled: true
+      v2:
+        enabled: true
+        prometheus:
+          enabled: true
+          configOverride:
+            scrape_interval: "15s"
+            evaluation_interval: "15s"
+
+---
+# Jaeger operator deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger-operator
+  namespace: crimeminer-system
+  labels:
+    app.kubernetes.io/name: jaeger-operator
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: tracing
+    compliance-level: fedramp-high
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jaeger-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jaeger-operator
+    spec:
+      serviceAccountName: jaeger-operator
+      containers:
+      - name: jaeger-operator
+        image: jaegertracing/jaeger-operator:1.42.0
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          fsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+
+---
+# Kiali operator deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiali-operator
+  namespace: crimeminer-system
+  labels:
+    app.kubernetes.io/name: kiali-operator
+    app.kubernetes.io/part-of: crimeminer
+    app.kubernetes.io/component: observability
+    compliance-level: fedramp-high
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kiali-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kiali-operator
+    spec:
+      serviceAccountName: kiali-operator
+      containers:
+      - name: kiali-operator
+        image: quay.io/kiali/kiali-operator:v1.65.0
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          fsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+
+---
+# Service mesh network policies
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: service-mesh-policy
+  namespace: crimeminer-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: crimeminer
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: crimeminer
+    ports:
+    - protocol: TCP
+      port: 15017 # Pilot discovery
+    - protocol: TCP
+      port: 15012 # Pilot webhook
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          app.kubernetes.io/part-of: crimeminer
+    ports:
+    - protocol: TCP
+      port: 15017
+    - protocol: TCP
+      port: 15012
