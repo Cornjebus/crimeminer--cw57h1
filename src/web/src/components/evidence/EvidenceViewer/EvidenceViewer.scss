@@ -1,0 +1,177 @@
+@use '../../assets/styles/variables' as *;
+@use '../../assets/styles/mixins' as *;
+
+// Custom properties for theme-aware styling
+:root {
+  --ev-background: #{map-get($colors, background, light)};
+  --ev-header-bg: #{lighten(map-get($colors, background, light), 2%)};
+  --ev-header-text: #{map-get($colors, text, light)};
+  --ev-border: #{map-get($colors, border)};
+  --ev-media-bg: #{darken(map-get($colors, background, light), 5%)};
+  --ev-transcript-bg: #{lighten(map-get($colors, background, light), 1%)};
+  --ev-transcript-text: #{map-get($colors, text, light)};
+  --ev-entities-bg: #{lighten(map-get($colors, background, light), 1%)};
+  --ev-entities-text: #{map-get($colors, text, light)};
+  --ev-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  @media (prefers-color-scheme: dark) {
+    --ev-background: #{map-get($colors, background, dark)};
+    --ev-header-bg: #{lighten(map-get($colors, background, dark), 3%)};
+    --ev-header-text: #{map-get($colors, text, dark)};
+    --ev-border: #{darken(map-get($colors, border), 40%)};
+    --ev-media-bg: #{darken(map-get($colors, background, dark), 2%)};
+    --ev-transcript-bg: #{lighten(map-get($colors, background, dark), 2%)};
+    --ev-transcript-text: #{map-get($colors, text, dark)};
+    --ev-entities-bg: #{lighten(map-get($colors, background, dark), 2%)};
+    --ev-entities-text: #{map-get($colors, text, dark)};
+    --ev-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.evidence-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--ev-background);
+  border-radius: 8px;
+  box-shadow: var(--ev-shadow);
+  contain: content;
+  position: relative;
+
+  @include transition(background-color, box-shadow);
+
+  @media print {
+    background: none;
+    box-shadow: none;
+  }
+}
+
+.evidence-viewer__header {
+  padding: map-get($spacing-scale, 3);
+  border-bottom: 1px solid var(--ev-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--ev-header-bg);
+  color: var(--ev-header-text);
+
+  @include high-contrast {
+    border-bottom-width: 2px;
+  }
+}
+
+.evidence-viewer__content {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: map-get($spacing-scale, 3);
+  padding: map-get($spacing-scale, 3);
+  height: calc(100% - 60px);
+  overflow: hidden;
+
+  @include respond-to(mobile) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    gap: map-get($spacing-scale, 2);
+  }
+
+  @include respond-to(tablet) {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+
+.evidence-viewer__media {
+  width: 100%;
+  height: 100%;
+  background-color: var(--ev-media-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  will-change: transform;
+
+  @include focus-ring;
+  @include transition(background-color);
+
+  @include high-contrast {
+    border: 2px solid currentColor;
+  }
+
+  &:focus-visible {
+    @include focus-ring(primary);
+  }
+}
+
+.evidence-viewer__transcript {
+  padding: map-get($spacing-scale, 3);
+  background-color: var(--ev-transcript-bg);
+  border-radius: 4px;
+  overflow-y: auto;
+  color: var(--ev-transcript-text);
+
+  @include scrollbar;
+  @include transition(background-color, color);
+
+  @media (prefers-reduced-motion: reduce) {
+    scroll-behavior: auto;
+  }
+
+  &:focus-visible {
+    @include focus-ring(primary);
+  }
+}
+
+.evidence-viewer__entities {
+  margin-block-start: map-get($spacing-scale, 3);
+  padding: map-get($spacing-scale, 3);
+  background-color: var(--ev-entities-bg);
+  border-radius: 4px;
+  color: var(--ev-entities-text);
+
+  @include transition(background-color, color);
+
+  @include high-contrast {
+    border: 2px solid currentColor;
+  }
+
+  &:focus-visible {
+    @include focus-ring(primary);
+  }
+}
+
+// Accessibility enhancements
+.evidence-viewer__keyboard-hint {
+  @include screen-reader-only;
+
+  &:focus-visible {
+    position: fixed;
+    top: map-get($spacing-scale, 2);
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    height: auto;
+    padding: map-get($spacing-scale, 2);
+    margin: 0;
+    clip: auto;
+    background: var(--ev-background);
+    border: 1px solid var(--ev-border);
+    border-radius: 4px;
+    z-index: map-get($z-index, modal);
+  }
+}
+
+// Print styles
+@media print {
+  .evidence-viewer {
+    break-inside: avoid;
+  }
+
+  .evidence-viewer__media {
+    page-break-inside: avoid;
+    max-height: 60vh;
+  }
+
+  .evidence-viewer__transcript,
+  .evidence-viewer__entities {
+    background: none;
+    border: 1px solid #000;
+  }
+}
